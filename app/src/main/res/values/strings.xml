@@ -35,4 +35,5 @@
     <string name="action_about">About</string>
     <string name="sample_title">Title</string>
     <string name="about_msg">Version : %1$s Build : %2$s  Copyright 2009 Hongbo All rights reserved  http://www.wordmate.net hongbo@wordmate.net</string>
+    <string name="sample_size">size</string>
 </resources>

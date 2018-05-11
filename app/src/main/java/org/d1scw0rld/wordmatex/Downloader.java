@@ -149,13 +149,10 @@ public class Downloader extends Activity
             Item item = (Item) items.get(position);
             ((TextView) view.findViewById(R.id.title)).setText(item.title);
             ((TextView) view.findViewById(R.id.user)).setText(item.user);
-            ((TextView) view.findViewById(R.id.size)).setText(new StringBuilder(String.valueOf(Integer.toString(item.size / 1000))).append("KB")
-                                                                                                                                   .toString());
-            ((TextView) view.findViewById(R.id.downloads)).setText(new StringBuilder(String.valueOf(Integer.toString(item.downloads))).append(" ")
-                                                                                                                                      .append(
-                                                                                                                                            getString(
-                                                                                                                                                  R.string.downloads))
-                                                                                                                                      .toString());
+            ((TextView) view.findViewById(R.id.size)).setText(String.valueOf(Integer.toString(item.size / 1000)) + "KB");
+            ((TextView) view.findViewById(R.id.downloads)).setText(String.valueOf(Integer.toString(item.downloads)) + " " +
+                                                                         getString(
+                                                                               R.string.downloads));
             return view;
          }
          else if(Downloader.this.state == Downloader.retry)

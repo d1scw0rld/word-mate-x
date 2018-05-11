@@ -9,12 +9,12 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <TextView
-        android:id="@+id/textView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:textAppearance="?android:attr/textAppearanceMedium" />
-<!--         android:gravity="top|bottom|left|right|center_vertical|fill_vertical|center_horizontal|fill_horizontal|center|fill|start|end" -->
+    <!--<TextView-->
+        <!--android:id="@+id/textView"-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="match_parent"-->
+        <!--android:textAppearance="?android:attr/textAppearanceMedium" />-->
+<!--&lt;!&ndash;         android:gravity="top|bottom|left|right|center_vertical|fill_vertical|center_horizontal|fill_horizontal|center|fill|start|end" &ndash;&gt;-->
         
 
 </LinearLayout>

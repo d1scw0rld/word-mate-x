@@ -36,7 +36,7 @@ import java.io.IOException;
 
 import org.d1scw0rld.wordmatex.dictionary.Dict;
 
-public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.IWordMate
+public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordMate
 {
    private final static String PREF_DICT = "dictionary",
          PREF_WORD = "word",
@@ -69,7 +69,7 @@ public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.
 
    private AlertDialog dictDialog;
 
-   private RecyclerView wordlistView;
+   private RecyclerView rvWordList;
 
    private View messageView;
 
@@ -98,10 +98,10 @@ public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.
 
 //      getSupportFragmentManager().popBackStack();
 
-      wordlistView = findViewById(R.id.wordlistView);
-      wordlistView.setItemAnimator(new DefaultItemAnimator());
-      wordlistView.setLayoutManager(new LinearLayoutManager(this));
-      wordlistView.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+      rvWordList = findViewById(R.id.rv_word_list);
+      rvWordList.setItemAnimator(new DefaultItemAnimator());
+      rvWordList.setLayoutManager(new LinearLayoutManager(this));
+      rvWordList.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
 
       switcher = findViewById(R.id.switcher);
 
@@ -129,7 +129,7 @@ public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.
          @Override
          public void onClick(View v)
          {
-            startActivity(new Intent(MainNewActivity.this, Downloader.class));
+            startActivity(new Intent(WordMateX.this, Downloader.class));
          }
       });
 
@@ -433,7 +433,7 @@ public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.
       else
       {
          menu.setGroupVisible(R.id.group_info, true);
-         if(isWordlistView())
+         if(getRvWordList())
          {
             menu.setGroupVisible(R.id.group_words, false);
          }
@@ -484,7 +484,8 @@ public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.
             break;
 
          case R.id.action_dict_downloader:
-            startActivity(new Intent(this, Downloader.class));
+//            startActivity(new Intent(this, Downloader.class));
+            startActivity(new Intent(this, DownloaderNew.class));
             break;
 
          case R.id.action_dict_info:
@@ -614,7 +615,7 @@ public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.
 
                                                 })
                                                 .create();
-//      wordlistView.setOnItemClickListener(new AdapterView.OnItemClickListener()
+//      rvWordList.setOnItemClickListener(new AdapterView.OnItemClickListener()
 //      {
 //         @Override
 //         public void onItemClick(AdapterView<?> adapterView,
@@ -630,7 +631,7 @@ public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.
       /*
        * Moved in adapter
        */
-//      wordlistView.setOnItemClickListener(new WordListAdapterNew.OnItemClickListener()
+//      rvWordList.setOnItemClickListener(new WordListAdapterNew.OnItemClickListener()
 //      {
 //         @Override
 //         public void OnItemClick(View view, int pos)
@@ -656,7 +657,7 @@ public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.
 //         @Override
 //         public void onClick(View v)
 //         {
-//            if(WordMate.this.isWordlistView())
+//            if(WordMate.this.getRvWordList())
 //            {
 //               displayContent();
 //            }
@@ -728,7 +729,7 @@ public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.
             displayContent(pos);
          }
       });
-      wordlistView.setAdapter(wordListAdapterNew);
+      rvWordList.setAdapter(wordListAdapterNew);
       currentWord = -1;
       if(isContentView())
       {
@@ -821,7 +822,7 @@ public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.
       {
          currentWord = index;
 //         scroll.scrollTo(0, 0);
-         wordlistView.scrollTo(0, 0);
+         rvWordList.scrollTo(0, 0);
          try
          {
             wordView.setText(dicts[currentDict].getWord(index));
@@ -867,17 +868,17 @@ public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.
    void displayWordlist(int index)
    {
       showWordlistView();
-//      wordlistView.getLayoutManager()
+//      rvWordList.getLayoutManager()
 //                  .scrollToPosition(index);
-      ((LinearLayoutManager) wordlistView.getLayoutManager()).scrollToPositionWithOffset(index, 0);
+      ((LinearLayoutManager) rvWordList.getLayoutManager()).scrollToPositionWithOffset(index, 0);
 
       /*
        *    Smooth scroll. Too slow.
        */
 //      smoothScroller.setTargetPosition(index);
-//      wordlistView.getLayoutManager().startSmoothScroll(smoothScroller);
+//      rvWordList.getLayoutManager().startSmoothScroll(smoothScroller);
 
-//      wordlistView.scrollTo(0, index);
+//      rvWordList.scrollTo(0, index);
    }
 
    void showContentView()
@@ -896,14 +897,14 @@ public class MainNewActivity extends AppCompatActivity implements DictLoaderNew.
       return switcher.getDisplayedChild() == 1;
    }
 
-   boolean isWordlistView()
+   boolean getRvWordList()
    {
       return switcher.getDisplayedChild() == 0;
    }
 
    void showWordlistView()
    {
-      if(!isWordlistView())
+      if(!getRvWordList())
       {
          switcher.setOutAnimation(this, R.anim.slide_right_1);
          switcher.setInAnimation(this, R.anim.slide_right_2);

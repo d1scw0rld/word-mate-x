@@ -2,15 +2,23 @@ package org.d1scw0rld.wordmatex;
 
 import android.app.ProgressDialog;
 import android.os.AsyncTask;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.dropbox.core.DbxException;
 import com.dropbox.core.DbxRequestConfig;
 import com.dropbox.core.http.OkHttp3Requestor;
 import com.dropbox.core.v2.DbxClientV2;
+import com.dropbox.core.v2.files.FileMetadata;
 import com.dropbox.core.v2.files.ListFolderResult;
 import com.dropbox.core.v2.files.Metadata;
 import com.dropbox.core.v2.users.FullAccount;
@@ -27,7 +35,9 @@ public class DownloaderNew extends AppCompatActivity
 
    private ProgressDialog progressDialog;
 
-   int a;
+   private ArrayList<Metadata> alMetadata = new ArrayList<>();
+
+   private DictionariesAdapter adDictionaries;
 
    @Override
    protected void onCreate(Bundle savedInstanceState)
@@ -36,15 +46,62 @@ public class DownloaderNew extends AppCompatActivity
       setContentView(R.layout.downloader_new);
 
       textView = findViewById(R.id.textView);
-      rvDictionaries = findViewById(R.id.rv_dictionaries);
 
+      adDictionaries = new DictionariesAdapter();
+      adDictionaries.setOnItemClickListener(new OnItemClickListener()
+      {
+         @Override
+         public void OnItemClick(View view, int pos)
+         {
+
+         }
+      });
+
+      rvDictionaries = findViewById(R.id.rv_dictionaries);
+      rvDictionaries.setItemAnimator(new DefaultItemAnimator());
+      rvDictionaries.setLayoutManager(new LinearLayoutManager(this));
+      rvDictionaries.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
+      rvDictionaries.setAdapter(adDictionaries);
+      new DropBoxTask().execute();
+//      new DropBoxTask(this, new DropBoxTask.Callback()
+//      {
+//         @Override
+//         public void onError(Exception e)
+//         {
+//
+//         }
+//
+//         @Override
+//         public void onFinish(ArrayList<Metadata> alMetadata)
+//         {
+//            DownloaderNew.this.alMetadata = alMetadata;
+//            adDictionaries.notifyDataSetChanged();
+//         }
+//      }).execute();
 
    }
 
-   private class atDropBox extends AsyncTask<Void, String, ArrayList<Metadata>>
+   private class DropBoxTask extends AsyncTask<Void, String, ArrayList<Metadata>>
    {
       DbxRequestConfig requestConfig;
       DbxClientV2 dbxClient;
+      ProgressDialog progressDialog;
+
+//      private Context context;
+//
+//      private Callback callback;
+
+//      public interface Callback
+//      {
+//         void onError(Exception e);
+//         void onFinish(ArrayList<Metadata> alMetadata);
+//      }
+
+//      public DropBoxTask(Context context, Callback callback)
+//      {
+//         this.context = context;
+//         this.callback = callback;
+//      }
 
       @Override
       protected void onPreExecute()
@@ -56,7 +113,7 @@ public class DownloaderNew extends AppCompatActivity
          progressDialog.show();
 
          super.onPreExecute();
-         requestConfig = DbxRequestConfig.newBuilder("box-drop-123")
+         requestConfig = DbxRequestConfig.newBuilder("word-mate-x")
                                          .withHttpRequestor(new OkHttp3Requestor(OkHttp3Requestor.defaultOkHttpClient()))
                                          .build();
       }
@@ -64,7 +121,8 @@ public class DownloaderNew extends AppCompatActivity
       @Override
       protected ArrayList<Metadata> doInBackground(Void... voids)
       {
-         ArrayList<Metadata> alMetadata = new ArrayList<>();
+//         ArrayList<Metadata> alMetadata = new ArrayList<>();
+         alMetadata.clear();
 
          dbxClient = new DbxClientV2(requestConfig, ACCESS_TOKEN);
          FullAccount account = null;
@@ -105,6 +163,7 @@ public class DownloaderNew extends AppCompatActivity
          catch(DbxException e)
          {
             e.printStackTrace();
+//            callback.onError(e);
             return null;
          }
          return alMetadata;
@@ -121,9 +180,88 @@ public class DownloaderNew extends AppCompatActivity
       protected void onPostExecute(ArrayList<Metadata> metadata)
       {
          progressDialog.cancel();
-//         metadata.get(0)
+         adDictionaries.notifyDataSetChanged();
+//         callback.onFinish(metadata);
 //         new DownloadFileTask(MainActivity.this, dbxClient).execute(metadata.get(0));
       }
+   }
+
+   class DictionariesAdapter extends RecyclerView.Adapter<DictionariesAdapter.ViewHolder>
+   {
+      private OnItemClickListener onItemClickListener = null;
+
+//      private ArrayList<Metadata> alMetadata;
+
+//      public DictionariesAdapter(ArrayList<Metadata> alMetadata)
+//      {
+//         this.alMetadata = alMetadata;
+//      }
+
+      public void setOnItemClickListener(OnItemClickListener onItemClickListener)
+      {
+         this.onItemClickListener = onItemClickListener;
+      }
+
+
+      @NonNull
+      @Override
+      public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType)
+      {
+         View v = LayoutInflater.from(parent.getContext())
+                                .inflate(R.layout.downloader_list_item_new, parent, false);
+//         .inflate(android.R.layout.simple_list_item_1, parent, false);
+
+         return new ViewHolder(v);
+      }
+
+      @Override
+      public void onBindViewHolder(@NonNull ViewHolder holder, int position)
+      {
+         Metadata metadata = alMetadata.get(position);
+         holder.tvTitle.setText(metadata.getName());
+         if(metadata instanceof FileMetadata)
+         {
+            holder.tvSize.setText(String.valueOf(((FileMetadata)metadata).getSize() / 1000) + "KB");
+         }
+         else
+            holder.tvSize.setText(null);
+
+      }
+
+      @Override
+      public int getItemCount()
+      {
+         return alMetadata.size();
+      }
+
+      public class ViewHolder extends RecyclerView.ViewHolder
+      {
+         TextView tvTitle,
+                  tvSize;
+         View view;
+
+         public ViewHolder(View itemView)
+         {
+            super(itemView);
+//            tvTitle = itemView.findViewById(android.R.id.text1);
+            tvTitle = itemView.findViewById(R.id.tv_title);
+            tvSize = itemView.findViewById(R.id.tv_size);
+            view = itemView;
+            view.setOnClickListener(new View.OnClickListener()
+            {
+               @Override
+               public void onClick(View view)
+               {
+                  onItemClickListener.OnItemClick(view, getLayoutPosition());
+               }
+            });
+         }
+      }
+   }
+
+   interface OnItemClickListener
+   {
+      void OnItemClick(View view, int pos);
    }
 
 }

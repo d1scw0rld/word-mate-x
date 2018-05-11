@@ -17,19 +17,12 @@ public class WordListAdapterNew extends RecyclerView.Adapter<WordListAdapterNew.
 
    private IError err;
 
-   private View.OnClickListener onClickListener = null;
-
    private OnItemClickListener onItemClickListener = null;
 
    public WordListAdapterNew(Dict dict, IError err)
    {
       this.dict = dict;
       this.err = err;
-   }
-
-   public void setOnClickListener(View.OnClickListener onClickListener)
-   {
-      this.onClickListener = onClickListener;
    }
 
    public void setOnItemClickListener(OnItemClickListener onItemClickListener)

@@ -19,7 +19,7 @@
     <item type="id" name="goButton">false</item>
     <item type="id" name="clearButton">false</item>
     <item type="id" name="switcher">false</item>
-    <item type="id" name="wordlistView">false</item>
+    <item type="id" name="rv_word_list">false</item>
     <item type="id" name="scroll">false</item>
     <item type="id" name="contentView">false</item>
     <item type="id" name="wordView">false</item>

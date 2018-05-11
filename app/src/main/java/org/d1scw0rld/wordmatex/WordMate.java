@@ -118,7 +118,7 @@ public class WordMate extends Activity
 //
 //      public void onClick(View v)
 //      {
-//         if(WordMate.this.isWordlistView())
+//         if(WordMate.this.getRvWordList())
 //         {
 //            WordMate.this.displayContent();
 //         }
@@ -187,7 +187,7 @@ public class WordMate extends Activity
       scroll = (ScrollView) findViewById(R.id.scroll);
       wordView = (TextView) findViewById(R.id.wordView);
       definitionView = (TextView) findViewById(R.id.definitionView);
-      wordlistView = (ListView) findViewById(R.id.wordlistView);
+      wordlistView = (ListView) findViewById(R.id.rv_word_list);
       messageView = findViewById(R.id.messageView);
       textView = (TextView) findViewById(R.id.textView);
       
