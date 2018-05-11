@@ -1,0 +1,33 @@
+apply plugin: 'com.android.application'
+
+android {
+    compileSdkVersion 27
+    buildToolsVersion "27.0.3"
+    defaultConfig {
+        applicationId 'org.d1scw0rld.wordmatex'
+//        minSdkVersion 2
+//        targetSdkVersion 2
+        minSdkVersion 14
+        targetSdkVersion 27
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+    productFlavors {
+    }
+}
+
+dependencies {
+    compile group: 'com.dropbox.core', name: 'dropbox-core-sdk', version: '3.0.7', changing: true
+    implementation 'com.android.support:appcompat-v7:27.1.1'
+    implementation 'com.android.support:design:27.1.1'
+    implementation 'com.anggrayudi:android-hidden-api:0.0.7'
+    implementation 'com.android.support.constraint:constraint-layout:1.1.0'
+    implementation 'com.dropbox.core:dropbox-core-sdk:3.0.7'
+    implementation 'com.squareup.picasso:picasso:2.5.2'
+    implementation 'com.squareup.okhttp:okhttp:2.7.5'
+    implementation 'com.squareup.okhttp3:okhttp:3.7.0'
+}

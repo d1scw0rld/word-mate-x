@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item type="id" name="title">false</item>
+    <item type="id" name="progress">false</item>
+    <item type="id" name="size">false</item>
+    <item type="id" name="percentage">false</item>
+    <item type="id" name="user">false</item>
+    <item type="id" name="downloads">false</item>
+    <item type="id" name="info">false</item>
+    <item type="id" name="button">false</item>
+    <item type="id" name="listView">false</item>
+    <item type="id" name="textView">false</item>
+    <item type="id" name="retryButton">false</item>
+    <item type="id" name="messageView">false</item>
+    <item type="id" name="downloaderButton">false</item>
+    <item type="id" name="toolbar">false</item>
+    <item type="id" name="dictButton">false</item>
+    <item type="id" name="inputField">false</item>
+    <item type="id" name="goButton">false</item>
+    <item type="id" name="clearButton">false</item>
+    <item type="id" name="switcher">false</item>
+    <item type="id" name="wordlistView">false</item>
+    <item type="id" name="scroll">false</item>
+    <item type="id" name="contentView">false</item>
+    <item type="id" name="wordView">false</item>
+    <item type="id" name="definitionView">false</item>
+    <item type="id" name="wordlist">false</item>
+    <item type="id" name="notify">false</item>
+</resources>

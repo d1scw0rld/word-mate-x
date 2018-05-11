@@ -1,0 +1,78 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:context=".MainNewActivity">
+
+    <item
+        android:id="@+id/action_search"
+        android:icon="@drawable/ic_search_white_24dp"
+        android:title="@android:string/search_go"
+        app:actionViewClass="android.support.v7.widget.SearchView"
+        app:showAsAction="always"
+        />
+
+
+    <item
+        android:id="@+id/action_dictionary"
+        android:icon="@drawable/ic_book_white_24dp"
+        android:title="@string/action_sort"
+        app:showAsAction="always"/>
+
+    <item
+        android:id="@+id/action_about"
+        android:title="@string/action_about"
+        android:alphabeticShortcut='a'
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_settings"
+        android:title="@string/action_settings"
+        android:alphabeticShortcut='s'
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_dict_downloader"
+        android:title="@string/downloader"
+        android:alphabeticShortcut='d'
+        app:showAsAction="never"/>
+    <group
+        android:id="@+id/group_info">
+
+    <item
+        android:id="@+id/action_dict_info"
+        android:title="@string/dict_info"
+        android:alphabeticShortcut='i'
+        app:showAsAction="never"/>
+    </group>
+
+    <group
+        android:id="@+id/group_words">
+    <item
+        android:id="@+id/action_prev_word"
+        android:title="@string/prev"
+        android:alphabeticShortcut='n'
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_next_word"
+        android:title="@string/next"
+        android:alphabeticShortcut='m'
+        app:showAsAction="never"/>
+    </group>
+
+
+
+
+    <!--    <item -->
+    <!--       android:id="@+id/action_imp_db_test" -->
+    <!--       android:orderInCategory="8" -->
+    <!--       android:title="Import test" -->
+    <!--       app:showAsAction="never"/> -->
+
+    <!--       <item -->
+    <!--       android:id="@+id/action_exp_db_test" -->
+    <!--       android:orderInCategory="9" -->
+    <!--       android:title="Export test" -->
+    <!--       app:showAsAction="never"/> -->
+
+</menu>
