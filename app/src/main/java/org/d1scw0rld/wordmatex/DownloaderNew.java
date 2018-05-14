@@ -27,7 +27,7 @@ import java.util.ArrayList;
 
 public class DownloaderNew extends AppCompatActivity
 {
-   private final static String ACCESS_TOKEN = "taEhH2ktguAAAAAAAAABtpz3e_ZHCYP3rZUU7otLbyQZ7OLAWqunkSQpXpw6xi2a";
+   final static String ACCESS_TOKEN = "taEhH2ktguAAAAAAAAABtpz3e_ZHCYP3rZUU7otLbyQZ7OLAWqunkSQpXpw6xi2a";
 
    private TextView textView;
 

@@ -67,11 +67,11 @@ public class Downloader extends Activity
 //      {}
 //
 //      public void onItemClick(AdapterView<?> adapterView,
-//                              View view,
+//                              View ACT_VIEW,
 //                              int position,
 //                              long id)
 //      {
-//         Downloader.this.view(position);
+//         Downloader.this.ACT_VIEW(position);
 //      }
 //   }
 
@@ -101,18 +101,18 @@ public class Downloader extends Activity
    {
       LayoutInflater inflater;
 
-      class C00081 implements OnClickListener
-      {
-         C00081()
-         {
-         }
-
-         public void onClick(View v)
-         {
-            load();
-            adapter.notifyDataSetChanged();
-         }
-      }
+//      class C00081 implements OnClickListener
+//      {
+//         C00081()
+//         {
+//         }
+//
+//         public void onClick(View v)
+//         {
+//            load();
+//            adapter.notifyDataSetChanged();
+//         }
+//      }
 
       DownloaderAdapter()
       {
@@ -147,27 +147,32 @@ public class Downloader extends Activity
                                     parent,
                                     false);
             Item item = (Item) items.get(position);
-            ((TextView) view.findViewById(R.id.title)).setText(item.title);
+            ((TextView) view.findViewById(R.id.tv_name)).setText(item.title);
             ((TextView) view.findViewById(R.id.user)).setText(item.user);
             ((TextView) view.findViewById(R.id.size)).setText(String.valueOf(Integer.toString(item.size / 1000)) + "KB");
             ((TextView) view.findViewById(R.id.downloads)).setText(String.valueOf(Integer.toString(item.downloads)) + " " +
-                                                                         getString(
-                                                                               R.string.downloads));
+                                                                         getString(R.string.downloads));
             return view;
          }
          else if(Downloader.this.state == Downloader.retry)
          {
-            view =
-                  this.inflater.inflate(R.layout.downloader_list_item_retry,
+            view = this.inflater.inflate(R.layout.downloader_list_item_retry,
                                         parent,
                                         false);
-            ((Button) view.findViewById(R.id.retryButton)).setOnClickListener(new C00081());
+            ((Button) view.findViewById(R.id.retryButton)).setOnClickListener(new OnClickListener()
+            {
+               @Override
+               public void onClick(View view)
+               {
+                  load();
+                  adapter.notifyDataSetChanged();
+               }
+            });
             return view;
          }
          else
          {
-            view =
-                  this.inflater.inflate(R.layout.downloader_list_item_loading,
+            view = this.inflater.inflate(R.layout.downloader_list_item_loading,
                                         parent,
                                         false);
             if(Downloader.this.state != 0)
@@ -292,7 +297,7 @@ public class Downloader extends Activity
          item.id = Integer.parseInt(e.getAttribute("id"));
          item.size = Integer.parseInt(e.getAttribute("size"));
          item.downloads = Integer.parseInt(e.getAttribute("downloads"));
-         item.title = e.getElementsByTagName("title")
+         item.title = e.getElementsByTagName("name")
                        .item(idle)
                        .getFirstChild()
                        .getNodeValue();
@@ -347,7 +352,7 @@ public class Downloader extends Activity
          i.putExtra("id", item.id);
          i.putExtra("size", item.size);
          i.putExtra("downloads", item.downloads);
-         i.putExtra("title", item.title);
+         i.putExtra("name", item.title);
          i.putExtra("info", item.info);
          i.putExtra("user", item.user);
          i.putExtra("file", item.file);

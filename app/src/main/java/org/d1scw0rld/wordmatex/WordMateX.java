@@ -40,7 +40,7 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
 {
    private final static String PREF_DICT = "dictionary",
          PREF_WORD = "word",
-         PREF_VIEW = "view",
+         PREF_VIEW = "ACT_VIEW",
          PREF_WORD_LIST = "word_list";
 
 
@@ -105,7 +105,7 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
 
       switcher = findViewById(R.id.switcher);
 
-      // Meesage view
+      // Meesage ACT_VIEW
       messageView = findViewById(R.id.messageView);
       textView = findViewById(R.id.textView);
       wordView = findViewById(R.id.wordView);
@@ -619,11 +619,11 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
 //      {
 //         @Override
 //         public void onItemClick(AdapterView<?> adapterView,
-//                                 View view,
+//                                 View ACT_VIEW,
 //                                 int position,
 //                                 long id)
 //         {
-//            setInput(((TextView) view).getText().toString());
+//            setInput(((TextView) ACT_VIEW).getText().toString());
 //            displayContent(position);
 //         }
 //      });
@@ -634,9 +634,9 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
 //      rvWordList.setOnItemClickListener(new WordListAdapterNew.OnItemClickListener()
 //      {
 //         @Override
-//         public void OnItemClick(View view, int pos)
+//         public void OnItemClick(View ACT_VIEW, int pos)
 //         {
-//            setInput(((TextView) view).getText().toString());
+//            setInput(((TextView) ACT_VIEW).getText().toString());
 //            displayContent(pos);
 //         }
 //      });
@@ -680,9 +680,9 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
       setDict(getPref(PREF_DICT, 0));
 //      inputField.addTextChangedListener(new InputWatcher(this));
    }
-   //      Field mChildren = menuView.getClass()  //android.support.v7.internal.view.menu.ActionMenuView
+   //      Field mChildren = menuView.getClass()  //android.support.v7.internal.ACT_VIEW.menu.ActionMenuView
    //                                .getSuperclass() //android.support.v7.widget.LinearLayoutCompat
-   //                                .getSuperclass() //android.view.ViewGroup
+   //                                .getSuperclass() //android.ACT_VIEW.ViewGroup
    //                                .getDeclaredField("mChildren");
    //      mChildren.setAccessible(true);
    //      View[] children = (View[]) mChildren.get(menuView);

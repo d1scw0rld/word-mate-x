@@ -52,7 +52,7 @@ public class WordListAdapterNew extends RecyclerView.Adapter<WordListAdapterNew.
       try
       {
          holder.textView.setText(dict.getWord(position));
-//         holder.view.setOnClickListener(onItemClickListener);
+//         holder.ACT_VIEW.setOnClickListener(onItemClickListener);
       }
       catch(IOException e)
       {
@@ -82,11 +82,11 @@ public class WordListAdapterNew extends RecyclerView.Adapter<WordListAdapterNew.
       }
 
 //      @Override
-//      public void onClick(View view)
+//      public void onClick(View ACT_VIEW)
 //      {
 //         if(onItemClickListener != null)
 //         {
-//            onItemClickListener.OnItemClick(view, getLayoutPosition());
+//            onItemClickListener.OnItemClick(ACT_VIEW, getLayoutPosition());
 //         }
 //      }
    }

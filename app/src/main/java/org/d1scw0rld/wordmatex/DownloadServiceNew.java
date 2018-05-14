@@ -23,9 +23,9 @@ import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import static java.lang.Integer.*;
+import static java.lang.Integer.valueOf;
 
-public class DownloadService extends Service
+public class DownloadServiceNew extends Service
 {
    static final int bufferSize = 65536;
 
@@ -33,15 +33,13 @@ public class DownloadService extends Service
          ACT_CANCEL              = 2,
          ACT_VIEW                = 3;
 
-   final static String XTR_TITLE = "name",
-         XTR_SIZE                = "size",
-         XTR_INFO                = "info",
-         XTR_DOWNLOADS           = "downloads",
-         XTR_USER                = "user",
-         XTR_ID                  = "id",
-         XTR_ACTION              = "action",
-         XTR_FILE                = "file",
-         XTR_IS_DOWNLOADING      = "is_downloading";
+   final static String XTR_NAME = "name",
+         XTR_INFO               = "info",
+         XTR_SIZE               = "size",
+         XTR_ID                 = "id",
+         XTR_ACTION             = "action",
+         XTR_FILE               = "file",
+         XTR_IS_DOWNLOADING     = "is_downloading";
 
 
    NotificationManager nm;
@@ -81,14 +79,12 @@ public class DownloadService extends Service
                t = new Task();
                t.id = id;
                t.size = intent.getIntExtra(XTR_SIZE, 0);
-               t.downloads = intent.getIntExtra(XTR_DOWNLOADS, 0);
-               t.title = intent.getStringExtra(XTR_TITLE);
-               t.info = intent.getStringExtra(XTR_INFO);
-               t.user = intent.getStringExtra(XTR_USER);
+               t.name = intent.getStringExtra(XTR_NAME);
                t.file = intent.getStringExtra(XTR_FILE);
+               t.info = intent.getStringExtra(XTR_INFO);
                tasks.put(id, t);
 
-               showToast(getString(R.string.download) + ": " + t.title);
+               showToast(getString(R.string.download) + ": " + t.name);
 
                new Runner(t).start();
             }
@@ -103,7 +99,7 @@ public class DownloadService extends Service
                tasks.remove(valueOf(id));
                showToast(getString(R.string.cancel_download)
                                + ": "
-                               + t.title);
+                               + t.name);
             }
             break;
 
@@ -112,10 +108,8 @@ public class DownloadService extends Service
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             i.putExtra(XTR_ID, id);
             i.putExtra(XTR_SIZE, intent.getIntExtra(XTR_SIZE, 0));
-            i.putExtra(XTR_DOWNLOADS, intent.getIntExtra(XTR_DOWNLOADS, 0));
-            i.putExtra(XTR_TITLE, intent.getStringExtra(XTR_TITLE));
+            i.putExtra(XTR_NAME, intent.getStringExtra(XTR_NAME));
             i.putExtra(XTR_INFO, intent.getStringExtra(XTR_INFO));
-            i.putExtra(XTR_USER, intent.getStringExtra(XTR_USER));
             i.putExtra(XTR_FILE, intent.getStringExtra(XTR_FILE));
             if(tasks.get(id) != null)
             {
@@ -144,24 +138,24 @@ public class DownloadService extends Service
          stopSelf();
       }
    }
+
    class Task
    {
 
       boolean stop;
-      int id,
-      size,
+      int     id,
+            size;
 
-            downloads;
       String file,
-      info,
-      title,
+            name,
+            info;
 
-            user;
       Task()
       {
       }
 
    }
+
    class Runner extends Thread
    {
 
@@ -172,31 +166,29 @@ public class DownloadService extends Service
       {
          this.task = t;
       }
+
       public void run()
       {
          Exception e;
 //         Intent intent;
          Notification notification = new Notification(android.R.drawable.stat_sys_download,
-                                                      task.title,
+                                                      task.name,
                                                       System.currentTimeMillis());
-         notification.flags = DownloadService.ACT_CANCEL;
-         Intent intent2 = new Intent(DownloadService.this, DownloadService.class);
-         intent2.putExtra(XTR_ACTION, DownloadService.ACT_VIEW);
+         notification.flags = DownloadServiceNew.ACT_CANCEL;
+         Intent intent2 = new Intent(DownloadServiceNew.this, DownloadServiceNew.class);
+         intent2.putExtra(XTR_ACTION, DownloadServiceNew.ACT_VIEW);
          intent2.putExtra(XTR_ID, task.id);
          intent2.putExtra(XTR_SIZE, task.size);
-         intent2.putExtra(XTR_DOWNLOADS, task.downloads);
-         intent2.putExtra(XTR_TITLE, task.title);
-         intent2.putExtra(XTR_INFO, task.info);
-         intent2.putExtra(XTR_USER, task.user);
+         intent2.putExtra(XTR_NAME, task.name);
          intent2.putExtra(XTR_FILE, task.file);
          intent2.setAction(Long.toString(System.currentTimeMillis()));
-         PendingIntent pi = PendingIntent.getService(DownloadService.this,
+         PendingIntent pi = PendingIntent.getService(DownloadServiceNew.this,
                                                      0,
                                                      intent2,
                                                      0);
-         String title = String.valueOf(getString(R.string.download)) + ": " + task.title;
+         String title = getString(R.string.download) + ": " + task.name;
 //         notification.setLatestEventInfo(DownloadService.this, name, "", pi);
-         Notification.Builder builder = new Notification.Builder(DownloadService.this);
+         Notification.Builder builder = new Notification.Builder(DownloadServiceNew.this);
          builder.setContentTitle(title);
          builder.setContentIntent(pi);
 //         builder.build(); // TODO Check and fix it. Require API 16
@@ -228,7 +220,7 @@ public class DownloadService extends Service
 //                                               "0" + text,
 //                                               pi);
 
-               builder = new Notification.Builder(DownloadService.this);
+               builder = new Notification.Builder(DownloadServiceNew.this);
                builder.setContentTitle(title)
                       .setContentText("0" + text)
                       .setContentIntent(pi);
@@ -271,7 +263,7 @@ public class DownloadService extends Service
 //                                                     Integer.toString(percent) + text,
 //                                                     pi);
 
-                     builder = new Notification.Builder(DownloadService.this);
+                     builder = new Notification.Builder(DownloadServiceNew.this);
                      builder.setContentTitle(title)
                             .setContentText(Integer.toString(percent) + text)
                             .setContentIntent(pi);
@@ -293,14 +285,14 @@ public class DownloadService extends Service
                       .endsWith(".zip"))
                {
                   title = new StringBuilder(String.valueOf(getString(R.string.extract))).append(": ")
-                                                                                        .append(task.title)
+                                                                                        .append(task.name)
                                                                                         .toString();
 //                  notification.setLatestEventInfo(DownloadService.this,
 //                                                  name,
 //                                                  "",
 //                                                  pi);
 
-                  builder = new Notification.Builder(DownloadService.this);
+                  builder = new Notification.Builder(DownloadServiceNew.this);
                   builder.setContentTitle(title)
                          .setContentText("")
                          .setContentIntent(pi);
@@ -328,7 +320,7 @@ public class DownloadService extends Service
 //                                                        "0" + text,
 //                                                        pi);
 
-                        builder = new Notification.Builder(DownloadService.this);
+                        builder = new Notification.Builder(DownloadServiceNew.this);
                         builder.setContentTitle(title)
                                .setContentText("0" + text)
                                .setContentIntent(pi);
@@ -380,7 +372,7 @@ public class DownloadService extends Service
 //                                                              Integer.toString(percent) + text,
 //                                                              pi);
 
-                              builder = new Notification.Builder(DownloadService.this);
+                              builder = new Notification.Builder(DownloadServiceNew.this);
                               builder.setContentTitle(title)
                                      .setContentText(Integer.toString(percent) + text)
                                      .setContentIntent(pi);
@@ -408,17 +400,17 @@ public class DownloadService extends Service
                      ((File) it.next()).renameTo(f);
                   }
                }
-               intent2 = new Intent(DownloadService.this, WordMate.class);
+               intent2 = new Intent(DownloadServiceNew.this, WordMate.class);
                try
                {
                   intent2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                   intent2.setAction(Long.toString(System.currentTimeMillis()));
-                  pi = PendingIntent.getActivity(DownloadService.this,
+                  pi = PendingIntent.getActivity(DownloadServiceNew.this,
                                                  0,
                                                  intent2,
                                                  0);
                   notification = new Notification(android.R.drawable.stat_sys_download_done,
-                                                  task.title,
+                                                  task.name,
                                                   System.currentTimeMillis());
                }
                catch(Exception e3)
@@ -428,7 +420,7 @@ public class DownloadService extends Service
                   if(!task.stop)
                   {
                      notification = new Notification(android.R.drawable.stat_notify_error,
-                                                     task.title,
+                                                     task.name,
                                                      System.currentTimeMillis());
                      notification.flags = 16;
 //                     notification.setLatestEventInfo(DownloadService.this,
@@ -436,7 +428,7 @@ public class DownloadService extends Service
 //                                                     e.getMessage(),
 //                                                     pi);
 
-                     builder = new Notification.Builder(DownloadService.this);
+                     builder = new Notification.Builder(DownloadServiceNew.this);
                      builder.setContentTitle(title)
                             .setContentText(e.getMessage())
                             .setContentIntent(pi);
@@ -459,7 +451,7 @@ public class DownloadService extends Service
 //                                                  getString(android.R.string.ok),
 //                                                  pi);
 
-                  builder = new Notification.Builder(DownloadService.this);
+                  builder = new Notification.Builder(DownloadServiceNew.this);
                   builder.setContentTitle(title)
                          .setContentText(getString(android.R.string.ok))
                          .setContentIntent(pi);
@@ -481,7 +473,7 @@ public class DownloadService extends Service
                   if(!task.stop)
                   {
                      notification = new Notification(android.R.drawable.stat_notify_error,
-                                                     task.title,
+                                                     task.name,
                                                      System.currentTimeMillis());
 
                      notification.flags = Notification.FLAG_AUTO_CANCEL;
@@ -491,7 +483,7 @@ public class DownloadService extends Service
 //                                                     e.getMessage(),
 //                                                     pi);
 
-                     builder = new Notification.Builder(DownloadService.this);
+                     builder = new Notification.Builder(DownloadServiceNew.this);
                      builder.setContentTitle(title)
                             .setContentText(e.getMessage())
                             .setContentIntent(pi);

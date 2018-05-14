@@ -91,11 +91,11 @@ public class WordMate extends Activity
 //      {}
 //
 //      public void onItemClick(AdapterView<?> adapterView,
-//                              View view,
+//                              View ACT_VIEW,
 //                              int position,
 //                              long id)
 //      {
-//         WordMate.this.setInput(((TextView) view).getText().toString());
+//         WordMate.this.setInput(((TextView) ACT_VIEW).getText().toString());
 //         WordMate.this.displayContent(position);
 //      }
 //   }
@@ -572,14 +572,14 @@ public class WordMate extends Activity
       showDialog(android.R.drawable.ic_dialog_alert, title, message);
    }
 
-//   void showAlert(int title, int message)
+//   void showAlert(int name, int message)
 //   {
-//      showDialog(android.R.drawable.ic_dialog_alert, title, message);
+//      showDialog(android.R.drawable.ic_dialog_alert, name, message);
 //   }
 //
-//   void showAlert(String title, String message)
+//   void showAlert(String name, String message)
 //   {
-//      showDialog(android.R.drawable.ic_dialog_alert, title, message);
+//      showDialog(android.R.drawable.ic_dialog_alert, name, message);
 //   }
 
    void showDialog(int icon, int title, String message)
@@ -592,9 +592,9 @@ public class WordMate extends Activity
       showDialog(icon, title, getString(message));
    }
 
-//   void showDialog(int icon, int title, int message)
+//   void showDialog(int icon, int name, int message)
 //   {
-//      showDialog(icon, getString(title), getString(message));
+//      showDialog(icon, getString(name), getString(message));
 //   }
 //
    void showDialog(int icon, String title, String message)

@@ -35,11 +35,11 @@ public class DownloadViewer extends Activity
    {
       super.onCreate(savedInstanceState);
       setContentView(R.layout.download_viewer);
-      titleView = (TextView) findViewById(R.id.title);
+      titleView = (TextView) findViewById(R.id.tv_name);
       userView = (TextView) findViewById(R.id.user);
       sizeView = (TextView) findViewById(R.id.size);
       downloadsView = (TextView) findViewById(R.id.downloads);
-      infoView = (TextView) findViewById(R.id.info);
+      infoView = (TextView) findViewById(R.id.tv_info);
       button = (Button) findViewById(R.id.button);
    }
 
@@ -47,13 +47,13 @@ public class DownloadViewer extends Activity
    {
       super.onStart();
       Intent i = getIntent();
-      id = i.getIntExtra("id", 0);
-      size = i.getIntExtra("size", 0);
-      downloads = i.getIntExtra("downloads", 0);
-      title = i.getStringExtra("title");
-      info = i.getStringExtra("info");
-      user = i.getStringExtra("user");
-      file = i.getStringExtra("file");
+      id = i.getIntExtra(DownloadService.XTR_ID, 0);
+      size = i.getIntExtra(DownloadService.XTR_SIZE, 0);
+      downloads = i.getIntExtra(DownloadService.XTR_DOWNLOADS, 0);
+      title = i.getStringExtra(DownloadService.XTR_TITLE);
+      info = i.getStringExtra(DownloadService.XTR_INFO);
+      user = i.getStringExtra(DownloadService.XTR_USER);
+      file = i.getStringExtra(DownloadService.XTR_FILE);
       titleView.setText(this.title);
       userView.setText(this.user);
       sizeView.setText(new StringBuilder(String.valueOf(Integer.toString(size / 1000))).append("KB").toString());
@@ -125,14 +125,14 @@ public class DownloadViewer extends Activity
    void download()
    {
       Intent i = new Intent(this, DownloadService.class);
-      i.putExtra("action", 1);
-      i.putExtra("id", id);
-      i.putExtra("size", size);
-      i.putExtra("downloads", downloads);
-      i.putExtra("title", title);
-      i.putExtra("info", info);
-      i.putExtra("user", user);
-      i.putExtra("file", file);
+      i.putExtra(DownloadService.XTR_ACTION, DownloadService.ACT_DOWNLOAD);
+      i.putExtra(DownloadService.XTR_ID, id);
+      i.putExtra(DownloadService.XTR_SIZE, size);
+      i.putExtra(DownloadService.XTR_DOWNLOADS, downloads);
+      i.putExtra(DownloadService.XTR_TITLE, title);
+      i.putExtra(DownloadService.XTR_INFO, info);
+      i.putExtra(DownloadService.XTR_USER, user);
+      i.putExtra(DownloadService.XTR_FILE, file);
       startService(i);
       finish();
    }
@@ -140,8 +140,8 @@ public class DownloadViewer extends Activity
    void cancel()
    {
       Intent i = new Intent(this, DownloadService.class);
-      i.putExtra("action", 2);
-      i.putExtra("id", id);
+      i.putExtra(DownloadService.XTR_ACTION, DownloadService.ACT_CANCEL);
+      i.putExtra(DownloadService.XTR_ID, id);
       startService(i);
       finish();
    }

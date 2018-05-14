@@ -16,14 +16,9 @@
             android:layout_height="wrap_content"
             android:paddingTop="10dp"
             android:singleLine="true"
-            android:textAppearance="?android:attr/textAppearanceLarge" />
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:text="@string/sample_name"/>
 
-        <TextView
-            android:id="@+id/user"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:singleLine="true"
-            android:textAppearance="?android:attr/textAppearanceMedium" />
     </LinearLayout>
 
     <ScrollView
@@ -42,15 +37,12 @@
                 android:layout_height="wrap_content" >
 
                 <TextView
-                    android:id="@+id/size"
+                    android:id="@+id/tv_size"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1.0" />
+                    android:layout_weight="1.0"
+                    android:text="@string/sample_size_1"/>
 
-                <TextView
-                    android:id="@+id/downloads"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content" />
             </LinearLayout>
 
             <TextView
@@ -58,7 +50,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:padding="10dp"
-                android:textAppearance="?android:attr/textAppearanceMedium" />
+                android:textAppearance="?android:attr/textAppearanceMedium"
+                android:text="@string/sample_date"/>
         </LinearLayout>
     </ScrollView>
 
@@ -66,7 +59,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:drawable/bottom_bar">
-<!--         android:gravity="top|bottom|left|right|center_vertical|fill_vertical|center_horizontal|fill_horizontal|center|fill|start|end" > -->
 
         <Button
             android:id="@+id/button"
