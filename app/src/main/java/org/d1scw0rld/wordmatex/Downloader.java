@@ -301,7 +301,7 @@ public class Downloader extends Activity
                        .item(idle)
                        .getFirstChild()
                        .getNodeValue();
-         item.info = e.getElementsByTagName("info")
+         item.info = e.getElementsByTagName("date")
                       .item(idle)
                       .getFirstChild()
                       .getNodeValue();
@@ -353,7 +353,7 @@ public class Downloader extends Activity
          i.putExtra("size", item.size);
          i.putExtra("downloads", item.downloads);
          i.putExtra("name", item.title);
-         i.putExtra("info", item.info);
+         i.putExtra("date", item.info);
          i.putExtra("user", item.user);
          i.putExtra("file", item.file);
          startService(i);

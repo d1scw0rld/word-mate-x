@@ -35,7 +35,7 @@ public class DownloadService extends Service
 
    final static String XTR_TITLE = "name",
          XTR_SIZE                = "size",
-         XTR_INFO                = "info",
+         XTR_INFO                = "date",
          XTR_DOWNLOADS           = "downloads",
          XTR_USER                = "user",
          XTR_ID                  = "id",

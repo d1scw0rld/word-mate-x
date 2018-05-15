@@ -38,9 +38,11 @@ import org.d1scw0rld.wordmatex.dictionary.Dict;
 
 public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordMate
 {
+   final static String FILES_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/wordmate/";
+
    private final static String PREF_DICT = "dictionary",
          PREF_WORD = "word",
-         PREF_VIEW = "ACT_VIEW",
+         PREF_VIEW = "view",
          PREF_WORD_LIST = "word_list";
 
 

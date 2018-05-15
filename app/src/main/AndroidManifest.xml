@@ -9,10 +9,12 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
 
     <application
         android:icon="@drawable/icon"
-        android:label="@string/app_name">
+        android:label="@string/app_name"
+        android:theme="@style/AppTheme">
 
         <!-- <activity -->
         <!-- android:name=".WordMate" -->
@@ -54,10 +56,17 @@
             android:label="@string/downloader"
             android:theme="@*android:style/Theme.NoTitleBar"/>
 
+        <activity
+            android:name=".DownloadViewerNew"
+            android:label="@string/downloader"
+            />
+
         <service android:name=".DownloadService"/>
 
-        <activity android:name=".DownloaderNew"
+        <service android:name=".DownloadServiceNew"
+                 android:theme="@style/AppTheme"/>
 
+        <activity android:name=".DownloaderNew"
                   android:theme="@style/AppTheme">
         </activity>
     </application>

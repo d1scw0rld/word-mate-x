@@ -1,6 +1,7 @@
 package org.d1scw0rld.wordmatex;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -53,7 +54,7 @@ public class DownloaderNew extends AppCompatActivity
          @Override
          public void OnItemClick(View view, int pos)
          {
-
+            view(pos);
          }
       });
 
@@ -264,4 +265,25 @@ public class DownloaderNew extends AppCompatActivity
       void OnItemClick(View view, int pos);
    }
 
+   void view(int position)
+   {
+      if(position < alMetadata.size())
+      {
+         Metadata metadata = alMetadata.get(position);
+         Intent i = new Intent(this, DownloadServiceNew.class);
+         i.putExtra(DownloadServiceNew.XTR_ACTION, DownloadService.ACT_VIEW);
+         i.putExtra(DownloadServiceNew.XTR_NAME, metadata.getName());
+//         i.putExtra(DownloadServiceNew.XTR_FILE, WordMateX.FILES_PATH + metadata.getPathLower());
+         i.putExtra(DownloadServiceNew.XTR_FILE, metadata.getPathLower());
+
+         if(metadata instanceof FileMetadata)
+         {
+            i.putExtra(DownloadServiceNew.XTR_SIZE, ((FileMetadata) metadata).getSize());
+            i.putExtra(DownloadServiceNew.XTR_ID, ((FileMetadata) metadata).getId().hashCode());
+            i.putExtra(DownloadServiceNew.XTR_DATE, ((FileMetadata) metadata).getClientModified().getTime());
+         }
+         startService(i);
+      }
+   }
 }
+

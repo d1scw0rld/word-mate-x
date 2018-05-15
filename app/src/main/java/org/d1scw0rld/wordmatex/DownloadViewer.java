@@ -39,7 +39,7 @@ public class DownloadViewer extends Activity
       userView = (TextView) findViewById(R.id.user);
       sizeView = (TextView) findViewById(R.id.size);
       downloadsView = (TextView) findViewById(R.id.downloads);
-      infoView = (TextView) findViewById(R.id.tv_info);
+      infoView = (TextView) findViewById(R.id.tv_date);
       button = (Button) findViewById(R.id.button);
    }
 

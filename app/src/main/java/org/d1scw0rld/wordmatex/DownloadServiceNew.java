@@ -4,10 +4,17 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.view.ContextThemeWrapper;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
@@ -16,6 +23,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -34,7 +42,7 @@ public class DownloadServiceNew extends Service
          ACT_VIEW                = 3;
 
    final static String XTR_NAME = "name",
-         XTR_INFO               = "info",
+         XTR_DATE               = "date",
          XTR_SIZE               = "size",
          XTR_ID                 = "id",
          XTR_ACTION             = "action",
@@ -81,12 +89,12 @@ public class DownloadServiceNew extends Service
                t.size = intent.getIntExtra(XTR_SIZE, 0);
                t.name = intent.getStringExtra(XTR_NAME);
                t.file = intent.getStringExtra(XTR_FILE);
-               t.info = intent.getStringExtra(XTR_INFO);
+               t.date = new Date(intent.getLongExtra(XTR_DATE, -1));
                tasks.put(id, t);
 
                showToast(getString(R.string.download) + ": " + t.name);
 
-               new Runner(t).start();
+               new RunnerNew(t).start();
             }
             break;
 
@@ -104,12 +112,27 @@ public class DownloadServiceNew extends Service
             break;
 
          case ACT_VIEW /* 3 */:
-            Intent i = new Intent(this, DownloadViewer.class);
+
+////            View alertLayout = getLayoutInflater().inflate(R.layout.download_viewer_new, null);
+//            View alertLayout = ((LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.download_viewer_new, null);
+//
+////            AlertDialog.Builder alert = new AlertDialog.Builder(this);
+//            AlertDialog.Builder alert = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AppTheme));
+//            alert.setTitle("Info");
+//            // this is set the view from XML inside AlertDialog
+////            alert.setView(alertLayout);
+//            // disallow cancel of AlertDialog on click of back button and outside touch
+//            alert.setCancelable(false);
+////            dialog.show();
+//            AlertDialog dialog = alert.create();
+//            dialog.show();
+
+            Intent i = new Intent(this, DownloadViewerNew.class);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             i.putExtra(XTR_ID, id);
-            i.putExtra(XTR_SIZE, intent.getIntExtra(XTR_SIZE, 0));
+            i.putExtra(XTR_SIZE, intent.getLongExtra(XTR_SIZE, 0));
             i.putExtra(XTR_NAME, intent.getStringExtra(XTR_NAME));
-            i.putExtra(XTR_INFO, intent.getStringExtra(XTR_INFO));
+            i.putExtra(XTR_DATE, intent.getLongExtra(XTR_DATE, -1));
             i.putExtra(XTR_FILE, intent.getStringExtra(XTR_FILE));
             if(tasks.get(id) != null)
             {
@@ -122,7 +145,21 @@ public class DownloadServiceNew extends Service
       if(tasks.size() > 0)
       {
 //         setForeground(true);
-         startForeground(id, null); // TODO Fix it. It just replace setForeground
+         Notification.Builder oNotificationBuilder = new Notification.Builder(DownloadServiceNew.this);
+         oNotificationBuilder.setContentTitle("Title");
+         oNotificationBuilder.setSmallIcon(android.R.drawable.arrow_down_float);
+
+         Notification notification;
+
+         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
+         {
+            notification = oNotificationBuilder.build();
+         }
+         else
+            notification = oNotificationBuilder.getNotification();
+
+         startForeground(id, notification); // TODO Fix it. It just replace setForeground
+
       }
       else
       {
@@ -141,19 +178,68 @@ public class DownloadServiceNew extends Service
 
    class Task
    {
-
       boolean stop;
-      int     id,
-            size;
+
+      int id;
+
+      long size;
 
       String file,
-            name,
-            info;
+            name;
+
+      Date date;
 
       Task()
       {
       }
+   }
 
+   class RunnerNew extends Thread
+   {
+      Task task;
+
+      RunnerNew(Task t)
+      {
+         this.task = t;
+      }
+
+      public void run()
+      {
+         Exception e;
+
+         Intent intent = new Intent(DownloadServiceNew.this, DownloadServiceNew.class);
+         intent.putExtra(XTR_ACTION, DownloadServiceNew.ACT_VIEW);
+         intent.putExtra(XTR_ID, task.id);
+         intent.putExtra(XTR_SIZE, task.size);
+         intent.putExtra(XTR_NAME, task.name);
+         intent.putExtra(XTR_FILE, task.file);
+         intent.setAction(Long.toString(System.currentTimeMillis()));
+         PendingIntent pi = PendingIntent.getService(DownloadServiceNew.this,
+                                                     0,
+                                                     intent,
+                                                     0);
+
+         String title = getString(R.string.download) + ": " + task.name;
+//         notification.setLatestEventInfo(DownloadService.this, name, "", pi);
+         Notification notification = new Notification(android.R.drawable.stat_sys_download,
+                                                      task.name,
+                                                      System.currentTimeMillis());
+         notification.flags = DownloadServiceNew.ACT_CANCEL;
+
+         Notification.Builder oNotificationBuilder = new Notification.Builder(DownloadServiceNew.this);
+         oNotificationBuilder.setContentTitle(title);
+         oNotificationBuilder.setContentIntent(pi);
+         oNotificationBuilder.setSmallIcon(android.R.drawable.arrow_down_float);
+
+         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
+         {
+            notification = oNotificationBuilder.build();
+         }
+         else
+            notification = oNotificationBuilder.getNotification();
+
+         nm.notify(task.id, notification);
+      }
    }
 
    class Runner extends Thread
@@ -213,7 +299,7 @@ public class DownloadServiceNew extends Service
                String text = "% "
                      + file.getName()
                      + " "
-                     + Integer.toString(task.size / 1000)
+                     + task.size / 1000
                      + "KB";
 //               notification.setLatestEventInfo(DownloadService.this,
 //                                               name,
@@ -228,27 +314,27 @@ public class DownloadServiceNew extends Service
                notification = builder.getNotification();
 
                nm.notify(task.id, notification);
-               int interval = task.size / 100;
+               long interval = task.size / 100;
                if(interval < ACT_DOWNLOAD)
                {
                   interval = ACT_DOWNLOAD;
                }
                int percent = 0;
                int p = 0;
-               int to = 0;
-               while(p < this.task.size)
+               long to = 0;
+               while(p < task.size)
                {
                   to += interval;
-                  if(to > this.task.size)
+                  if(to > task.size)
                   {
-                     to = this.task.size;
+                     to = task.size;
                   }
                   while(p < to)
                   {
                      bufferedOutputStream.write(bufferedInputStream.read());
                      p += ACT_DOWNLOAD;
                   }
-                  if(this.task.stop)
+                  if(task.stop)
                   {
                      bufferedInputStream.close();
                      bufferedOutputStream.close();

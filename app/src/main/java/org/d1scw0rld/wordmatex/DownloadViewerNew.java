@@ -11,30 +11,35 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.File;
+import java.util.Date;
 
 public class DownloadViewerNew extends Activity
 {
-   Button   button;
-   String   file,
-   info;
-   int      id;
-   int      size;
-   TextView tvSize;
-   String   name;
-   TextView tvName,
-   tvInfo;
+   private int id;
+
+   private long size;
+
+   private String file,
+         name;
+
+   private Date date;
+
+   private TextView tvSize,
+         tvName,
+         tvDate;
+
+   private Button button;
 
    protected void onCreate(Bundle savedInstanceState)
    {
       super.onCreate(savedInstanceState);
       setContentView(R.layout.download_viewer_new);
-      tvName = (TextView) findViewById(R.id.tv_name);
-      tvSize = (TextView) findViewById(R.id.tv_size);
-      tvInfo = (TextView) findViewById(R.id.tv_info);
-      button = (Button) findViewById(R.id.button);
+      tvName = findViewById(R.id.tv_name);
+      tvSize = findViewById(R.id.tv_size);
+      tvDate = findViewById(R.id.tv_date);
+      button = findViewById(R.id.button);
    }
 
    protected void onStart()
@@ -42,12 +47,13 @@ public class DownloadViewerNew extends Activity
       super.onStart();
       Intent i = getIntent();
       id = i.getIntExtra(DownloadServiceNew.XTR_ID, 0);
-      size = i.getIntExtra(DownloadServiceNew.XTR_SIZE, 0);
+      size = i.getLongExtra(DownloadServiceNew.XTR_SIZE, 0);
       name = i.getStringExtra(DownloadServiceNew.XTR_NAME);
       file = i.getStringExtra(DownloadServiceNew.XTR_FILE);
-      tvName.setText(this.name);
-      tvSize.setText(new StringBuilder(String.valueOf(Integer.toString(size / 1000))).append("KB").toString());
-      tvInfo.setText(Html.fromHtml(info));
+      date = new Date(i.getLongExtra(DownloadServiceNew.XTR_DATE, -1));
+      tvName.setText(name);
+      tvSize.setText(String.format("%dKB", size / 1000));
+      tvDate.setText(Html.fromHtml(date.toString())); // TODO Format it correctly
 
       if(i.getBooleanExtra(DownloadServiceNew.XTR_IS_DOWNLOADING, false))
       {
@@ -112,12 +118,12 @@ public class DownloadViewerNew extends Activity
 
    void download()
    {
-      Intent i = new Intent(this, DownloadService.class);
-      i.putExtra(DownloadServiceNew.XTR_ACTION, DownloadService.ACT_DOWNLOAD);
+      Intent i = new Intent(this, DownloadServiceNew.class);
+      i.putExtra(DownloadServiceNew.XTR_ACTION, DownloadServiceNew.ACT_DOWNLOAD);
       i.putExtra(DownloadServiceNew.XTR_ID, id);
       i.putExtra(DownloadServiceNew.XTR_SIZE, size);
       i.putExtra(DownloadServiceNew.XTR_NAME, name);
-      i.putExtra(DownloadServiceNew.XTR_INFO, info);
+      i.putExtra(DownloadServiceNew.XTR_DATE, date);
       i.putExtra(DownloadServiceNew.XTR_FILE, file);
       startService(i);
       finish();
@@ -130,15 +136,5 @@ public class DownloadViewerNew extends Activity
       i.putExtra(DownloadServiceNew.XTR_ID, id);
       startService(i);
       finish();
-   }
-
-   void showToast(int id)
-   {
-      Toast.makeText(this, id, Toast.LENGTH_SHORT).show();
-   }
-
-   void showToast(String s)
-   {
-      Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
    }
 }

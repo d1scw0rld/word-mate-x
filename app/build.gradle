@@ -9,6 +9,7 @@ android {
 //        targetSdkVersion 2
         minSdkVersion 14
         targetSdkVersion 27
+        multiDexEnabled true
     }
     buildTypes {
         release {

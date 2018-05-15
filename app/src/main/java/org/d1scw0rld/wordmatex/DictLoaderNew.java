@@ -167,7 +167,8 @@ class DictLoaderNew
       dicts = new TreeMap();
       files = new ArrayList();
 //      File dir = new File("/sdcard/wordmate/");
-      File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/wordmate/");
+//      File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/wordmate/");
+      File dir = new File(WordMateX.FILES_PATH);
 //      File dir = new File(Environment.getDataDirectory().getPath() + "/wordmate/");
 
       if(!dir.exists())
