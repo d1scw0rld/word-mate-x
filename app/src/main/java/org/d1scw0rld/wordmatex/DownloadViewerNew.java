@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -15,7 +16,7 @@ import android.widget.TextView;
 import java.io.File;
 import java.util.Date;
 
-public class DownloadViewerNew extends Activity
+public class DownloadViewerNew extends AppCompatActivity
 {
    private int id;
 
@@ -36,6 +37,7 @@ public class DownloadViewerNew extends Activity
    {
       super.onCreate(savedInstanceState);
       setContentView(R.layout.download_viewer_new);
+
       tvName = findViewById(R.id.tv_name);
       tvSize = findViewById(R.id.tv_size);
       tvDate = findViewById(R.id.tv_date);

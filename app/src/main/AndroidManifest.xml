@@ -54,11 +54,11 @@
         <activity
             android:name=".DownloadViewer"
             android:label="@string/downloader"
-            android:theme="@*android:style/Theme.NoTitleBar"/>
+            android:theme="@android:style/Theme.NoTitleBar"/>
 
         <activity
             android:name=".DownloadViewerNew"
-            android:label="@string/downloader"
+            android:theme="@style/Theme.AppCompat.Dialog.Alert"
             />
 
         <service android:name=".DownloadService"/>

@@ -4,23 +4,31 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.support.v4.app.NotificationCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.view.ContextThemeWrapper;
-import android.view.LayoutInflater;
-import android.view.View;
 import android.view.WindowManager;
 import android.widget.Toast;
+
+import com.dropbox.core.DbxException;
+import com.dropbox.core.DbxRequestConfig;
+import com.dropbox.core.http.OkHttp3Requestor;
+import com.dropbox.core.v2.DbxClientV2;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Date;
@@ -49,10 +57,14 @@ public class DownloadServiceNew extends Service
          XTR_FILE               = "file",
          XTR_IS_DOWNLOADING     = "is_downloading";
 
+   private final static String NTF_CHN = "dict_download_channel";
 
-   NotificationManager nm;
 
-   TreeMap<Integer, Task> tasks;
+   private NotificationManager nm;
+
+   private TreeMap<Integer, Task> tasks;
+
+   private DbxClientV2 dbxClient;
 
    Handler handler = new Handler()
    {
@@ -67,6 +79,11 @@ public class DownloadServiceNew extends Service
    {
       tasks = new TreeMap<>();
       nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+      DbxRequestConfig requestConfig = DbxRequestConfig.newBuilder("word-mate-x")
+                                                       .withHttpRequestor(new OkHttp3Requestor(OkHttp3Requestor.defaultOkHttpClient()))
+                                                       .build();
+      dbxClient = new DbxClientV2(requestConfig, DownloaderNew.ACCESS_TOKEN);
+
    }
 
    public IBinder onBind(Intent intent)
@@ -86,7 +103,7 @@ public class DownloadServiceNew extends Service
             {
                t = new Task();
                t.id = id;
-               t.size = intent.getIntExtra(XTR_SIZE, 0);
+               t.size = intent.getLongExtra(XTR_SIZE, 0);
                t.name = intent.getStringExtra(XTR_NAME);
                t.file = intent.getStringExtra(XTR_FILE);
                t.date = new Date(intent.getLongExtra(XTR_DATE, -1));
@@ -139,24 +156,24 @@ public class DownloadServiceNew extends Service
                i.putExtra(XTR_IS_DOWNLOADING, true);
             }
             startActivity(i);
+
             break;
       }
 
       if(tasks.size() > 0)
       {
 //         setForeground(true);
-         Notification.Builder oNotificationBuilder = new Notification.Builder(DownloadServiceNew.this);
-         oNotificationBuilder.setContentTitle("Title");
-         oNotificationBuilder.setSmallIcon(android.R.drawable.arrow_down_float);
+         NotificationCompat.Builder oNotificationBuilder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
+         oNotificationBuilder.setContentTitle(getString(R.string.app_name));
+         oNotificationBuilder.setSmallIcon(R.drawable.icon);
+         Notification notification = oNotificationBuilder.build();
 
-         Notification notification;
-
-         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-         {
-            notification = oNotificationBuilder.build();
-         }
-         else
-            notification = oNotificationBuilder.getNotification();
+//         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
+//         {
+//            notification = oNotificationBuilder.build();
+//         }
+//         else
+//            notification = oNotificationBuilder.getNotification();
 
          startForeground(id, notification); // TODO Fix it. It just replace setForeground
 
@@ -198,14 +215,15 @@ public class DownloadServiceNew extends Service
    {
       Task task;
 
+
       RunnerNew(Task t)
       {
-         this.task = t;
+         task = t;
       }
 
       public void run()
       {
-         Exception e;
+//         Exception e;
 
          Intent intent = new Intent(DownloadServiceNew.this, DownloadServiceNew.class);
          intent.putExtra(XTR_ACTION, DownloadServiceNew.ACT_VIEW);
@@ -221,24 +239,111 @@ public class DownloadServiceNew extends Service
 
          String title = getString(R.string.download) + ": " + task.name;
 //         notification.setLatestEventInfo(DownloadService.this, name, "", pi);
-         Notification notification = new Notification(android.R.drawable.stat_sys_download,
-                                                      task.name,
-                                                      System.currentTimeMillis());
-         notification.flags = DownloadServiceNew.ACT_CANCEL;
+//         Notification notification = new Notification(android.R.drawable.stat_sys_download,
+//                                                      task.name,
+//                                                      System.currentTimeMillis());
+//         notification.flags = Notification.FLAG_ONGOING_EVENT;
 
-         Notification.Builder oNotificationBuilder = new Notification.Builder(DownloadServiceNew.this);
-         oNotificationBuilder.setContentTitle(title);
-         oNotificationBuilder.setContentIntent(pi);
-         oNotificationBuilder.setSmallIcon(android.R.drawable.arrow_down_float);
+         NotificationCompat.Builder oNotificationBuilder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
+         oNotificationBuilder.setContentTitle(title)
+                             .setContentIntent(pi)
+                             .setSmallIcon(android.R.drawable.stat_sys_download)
+                             .setTicker(task.name)
+                             .setWhen(System.currentTimeMillis());
+         Notification notification = oNotificationBuilder.build();
+         notification.flags = Notification.FLAG_ONGOING_EVENT;
 
-         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-         {
-            notification = oNotificationBuilder.build();
-         }
-         else
-            notification = oNotificationBuilder.getNotification();
+//         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
+//         {
+//            notification = oNotificationBuilder.build();
+//         }
+//         else
+//            notification = oNotificationBuilder.getNotification();
 
          nm.notify(task.id, notification);
+
+         File path = new File(WordMateX.FILES_PATH);
+         File file = new File(path, task.file);
+         // Make sure the Downloads directory exists.
+         if(!path.exists())
+         {
+            if(!path.mkdirs())
+            {
+               throw new RuntimeException("Unable to create directory: " + path);
+            }
+         }
+         else if(!path.isDirectory())
+         {
+            throw new IllegalStateException("Download path is not a directory: " + path);
+         }
+
+         try
+         {
+            OutputStream outputStream = new FileOutputStream(file);
+
+            dbxClient.files()
+                     .download(task.file)
+                     //                      .download(metadata.getPathLower(), metadata.getRev())
+                     .download(outputStream);
+            // Tell android about the file
+            intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            intent.setData(Uri.fromFile(file));
+            DownloadServiceNew.this.sendBroadcast(intent);
+
+            intent = new Intent(DownloadServiceNew.this, WordMateX.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            intent.setAction(Long.toString(System.currentTimeMillis()));
+            pi = PendingIntent.getActivity(DownloadServiceNew.this,
+                                           0,
+                                           intent,
+                                           0);
+
+            oNotificationBuilder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
+            oNotificationBuilder.setContentTitle(task.name)
+                                .setContentText(getString(android.R.string.ok))
+                                .setContentIntent(pi)
+                                .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                                .setWhen(System.currentTimeMillis());
+            notification = oNotificationBuilder.build();
+            notification.flags = Notification.FLAG_AUTO_CANCEL;
+            notification = oNotificationBuilder.build();
+
+            nm.cancel(task.id);
+            nm.notify(task.id, notification);
+            handler.sendEmptyMessage(task.id);
+
+         }
+         catch(DbxException | IOException e)
+         {
+            e.printStackTrace();
+
+            if(!task.stop)
+            {
+//               notification = new Notification(android.R.drawable.stat_notify_error,
+//                                               task.name,
+//                                               System.currentTimeMillis());
+//               notification.flags = Notification.FLAG_AUTO_CANCEL;
+               oNotificationBuilder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
+               oNotificationBuilder.setContentTitle(title)
+                                   .setContentText(e.getMessage())
+                                   .setContentIntent(pi);
+               notification = oNotificationBuilder.build();
+               notification.flags = Notification.FLAG_AUTO_CANCEL;
+
+               nm.cancel(task.id);
+               nm.notify(task.id, notification);
+               handler.sendEmptyMessage(task.id);
+            }
+         }
+//         catch(DbxException e1)
+//         {
+//            e1.printStackTrace();
+//         }
+//         catch(IOException e1)
+//         {
+//            e1.printStackTrace();
+//         }
+
       }
    }
 
@@ -274,11 +379,11 @@ public class DownloadServiceNew extends Service
                                                      0);
          String title = getString(R.string.download) + ": " + task.name;
 //         notification.setLatestEventInfo(DownloadService.this, name, "", pi);
-         Notification.Builder builder = new Notification.Builder(DownloadServiceNew.this);
+         NotificationCompat.Builder builder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
          builder.setContentTitle(title);
          builder.setContentIntent(pi);
 //         builder.build(); // TODO Check and fix it. Require API 16
-         notification = builder.getNotification();
+         notification = builder.build();
 
          nm.notify(task.id, notification);
          try
@@ -306,7 +411,7 @@ public class DownloadServiceNew extends Service
 //                                               "0" + text,
 //                                               pi);
 
-               builder = new Notification.Builder(DownloadServiceNew.this);
+               builder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
                builder.setContentTitle(title)
                       .setContentText("0" + text)
                       .setContentIntent(pi);
@@ -315,9 +420,9 @@ public class DownloadServiceNew extends Service
 
                nm.notify(task.id, notification);
                long interval = task.size / 100;
-               if(interval < ACT_DOWNLOAD)
+               if(interval < 1)
                {
-                  interval = ACT_DOWNLOAD;
+                  interval = 1;
                }
                int percent = 0;
                int p = 0;
@@ -332,7 +437,7 @@ public class DownloadServiceNew extends Service
                   while(p < to)
                   {
                      bufferedOutputStream.write(bufferedInputStream.read());
-                     p += ACT_DOWNLOAD;
+                     p += 1;
                   }
                   if(task.stop)
                   {
@@ -343,18 +448,18 @@ public class DownloadServiceNew extends Service
                   }
                   else if(percent != 100)
                   {
-                     percent += ACT_DOWNLOAD;
+                     percent += 1;
 //                     notification.setLatestEventInfo(DownloadService.this,
 //                                                     name,
 //                                                     Integer.toString(percent) + text,
 //                                                     pi);
 
-                     builder = new Notification.Builder(DownloadServiceNew.this);
+                     builder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
                      builder.setContentTitle(title)
                             .setContentText(Integer.toString(percent) + text)
                             .setContentIntent(pi);
 //         builder.build(); // TODO Check and fix it. Require API 16
-                     notification = builder.getNotification();
+                     notification = builder.build();
 
                      nm.notify(task.id, notification);
                   }
@@ -378,12 +483,12 @@ public class DownloadServiceNew extends Service
 //                                                  "",
 //                                                  pi);
 
-                  builder = new Notification.Builder(DownloadServiceNew.this);
+                  builder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
                   builder.setContentTitle(title)
                          .setContentText("")
                          .setContentIntent(pi);
 //         builder.build(); // TODO Check and fix it. Require API 16
-                  notification = builder.getNotification();
+                  notification = builder.build();
 
                   nm.notify(task.id, notification);
                   LinkedList<File> files = new LinkedList();
@@ -406,12 +511,12 @@ public class DownloadServiceNew extends Service
 //                                                        "0" + text,
 //                                                        pi);
 
-                        builder = new Notification.Builder(DownloadServiceNew.this);
+                        builder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
                         builder.setContentTitle(title)
                                .setContentText("0" + text)
                                .setContentIntent(pi);
 //         builder.build(); // TODO Check and fix it. Require API 16
-                        notification = builder.getNotification();
+                        notification = builder.build();
 
                         nm.notify(task.id, notification);
                         bufferedInputStream = new BufferedInputStream(zipFile.getInputStream(e2), bufferSize);
@@ -423,9 +528,9 @@ public class DownloadServiceNew extends Service
                         tmpFile = File.createTempFile(file.getName(), null, dir);
                         bufferedOutputStream = new BufferedOutputStream(new FileOutputStream(tmpFile), bufferSize);
                         interval = size / 100;
-                        if(interval < ACT_DOWNLOAD)
+                        if(interval < 1)
                         {
-                           interval = ACT_DOWNLOAD;
+                           interval = 1;
                         }
                         percent = 0;
                         p = 0;
@@ -440,7 +545,7 @@ public class DownloadServiceNew extends Service
                            while(p < to)
                            {
                               bufferedOutputStream.write(bufferedInputStream.read());
-                              p += ACT_DOWNLOAD;
+                              p += 1;
                            }
                            if(task.stop)
                            {
@@ -452,13 +557,13 @@ public class DownloadServiceNew extends Service
                            }
                            else if(percent != 100)
                            {
-                              percent += ACT_DOWNLOAD;
+                              percent += 1;
 //                              notification.setLatestEventInfo(DownloadService.this,
 //                                                              name,
 //                                                              Integer.toString(percent) + text,
 //                                                              pi);
 
-                              builder = new Notification.Builder(DownloadServiceNew.this);
+                              builder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
                               builder.setContentTitle(title)
                                      .setContentText(Integer.toString(percent) + text)
                                      .setContentIntent(pi);
@@ -486,7 +591,7 @@ public class DownloadServiceNew extends Service
                      ((File) it.next()).renameTo(f);
                   }
                }
-               intent2 = new Intent(DownloadServiceNew.this, WordMate.class);
+               intent2 = new Intent(DownloadServiceNew.this, WordMateX.class);
                try
                {
                   intent2.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -508,22 +613,23 @@ public class DownloadServiceNew extends Service
                      notification = new Notification(android.R.drawable.stat_notify_error,
                                                      task.name,
                                                      System.currentTimeMillis());
-                     notification.flags = 16;
+                     notification.flags = Notification.FLAG_AUTO_CANCEL;
 //                     notification.setLatestEventInfo(DownloadService.this,
 //                                                     name,
 //                                                     e.getMessage(),
 //                                                     pi);
 
-                     builder = new Notification.Builder(DownloadServiceNew.this);
+//                     builder = new NotificationCompat.Builder()
+                     builder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
                      builder.setContentTitle(title)
                             .setContentText(e.getMessage())
                             .setContentIntent(pi);
 //         builder.build(); // TODO Check and fix it. Require API 16
-                     notification = builder.getNotification();
+                     notification = builder.build();
 
                      nm.cancel(task.id);
                      nm.notify(task.id, notification);
-                     handler.sendEmptyMessage(this.task.id);
+                     handler.sendEmptyMessage(task.id);
                      return;
                   }
                   return;
@@ -531,18 +637,18 @@ public class DownloadServiceNew extends Service
                Notification notification2;
                try
                {
-                  notification.flags = 16;
+                  notification.flags = Notification.FLAG_AUTO_CANCEL;
 //                  notification.setLatestEventInfo(DownloadService.this,
 //                                                  task.name,
 //                                                  getString(android.R.string.ok),
 //                                                  pi);
 
-                  builder = new Notification.Builder(DownloadServiceNew.this);
+                  builder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
                   builder.setContentTitle(title)
                          .setContentText(getString(android.R.string.ok))
                          .setContentIntent(pi);
 //         builder.build(); // TODO Check and fix it. Require API 16
-                  notification = builder.getNotification();
+                  notification = builder.build();
 
                   nm.cancel(task.id);
                   nm.notify(task.id, notification);
@@ -569,12 +675,12 @@ public class DownloadServiceNew extends Service
 //                                                     e.getMessage(),
 //                                                     pi);
 
-                     builder = new Notification.Builder(DownloadServiceNew.this);
+                     builder = new NotificationCompat.Builder(DownloadServiceNew.this, NTF_CHN);
                      builder.setContentTitle(title)
                             .setContentText(e.getMessage())
                             .setContentIntent(pi);
 //         builder.build(); // TODO Check and fix it. Require API 16
-                     notification = builder.getNotification();
+                     notification = builder.build();
 
                      nm.cancel(task.id);
                      nm.notify(task.id, notification);

@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@android:drawable/title_bar"
-        android:orientation="vertical" >
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/tv_name"
@@ -16,45 +16,45 @@
             android:layout_height="wrap_content"
             android:paddingTop="10dp"
             android:singleLine="true"
-            android:textAppearance="?android:attr/textAppearanceLarge"
-            android:text="@string/sample_name"/>
+            android:text="@string/sample_name"
+            android:textAppearance="?android:attr/textAppearanceLarge"/>
 
     </LinearLayout>
 
-    <ScrollView
+    <TextView
+        android:id="@+id/tv_date"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1.0" >
+        android:layout_height="wrap_content"
+        android:padding="10dp"
+        android:text="@string/sample_date"
+        android:textAppearance="?android:attr/textAppearanceMedium"/>
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical" >
+    <TextView
+        android:id="@+id/tv_size"
+        style="?android:attr/listSeparatorTextViewStyle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/sample_size_1"/>
 
-            <TextView
-                android:id="@+id/tv_size"
-                style="?android:attr/listSeparatorTextViewStyle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/sample_size_1"/>
+    <!--<ScrollView-->
+        <!--android:layout_width="match_parent"-->
+        <!--android:layout_height="0dp"-->
+        <!--android:layout_weight="1.0" >-->
 
-            <!--<LinearLayout-->
-                <!--style="?android:attr/listSeparatorTextViewStyle" -->
-                <!--android:layout_width="match_parent"-->
-                <!--android:layout_height="wrap_content" >-->
+        <!--<LinearLayout-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:orientation="vertical" >-->
 
-            <!--</LinearLayout>-->
+            <!--&lt;!&ndash;<LinearLayout&ndash;&gt;-->
+                <!--&lt;!&ndash;style="?android:attr/listSeparatorTextViewStyle" &ndash;&gt;-->
+                <!--&lt;!&ndash;android:layout_width="match_parent"&ndash;&gt;-->
+                <!--&lt;!&ndash;android:layout_height="wrap_content" >&ndash;&gt;-->
 
-            <TextView
-                android:id="@+id/tv_date"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="10dp"
-                android:textAppearance="?android:attr/textAppearanceMedium"
-                android:text="@string/sample_date"/>
-        </LinearLayout>
-    </ScrollView>
+            <!--&lt;!&ndash;</LinearLayout>&ndash;&gt;-->
+
+        <!--</LinearLayout>-->
+    <!--</ScrollView>-->
 
     <!--<LinearLayout-->
         <!--android:layout_width="match_parent"-->
