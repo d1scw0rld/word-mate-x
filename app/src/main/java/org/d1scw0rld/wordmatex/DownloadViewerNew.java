@@ -10,6 +10,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -35,8 +36,20 @@ public class DownloadViewerNew extends AppCompatActivity
 
    protected void onCreate(Bundle savedInstanceState)
    {
+//      boolean b= requestWindowFeature(Window.FEATURE_NO_TITLE);
       super.onCreate(savedInstanceState);
+      supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
+//      getSupportActionBar().hide(); //<< this
       setContentView(R.layout.download_viewer_new);
+
+//      setTitle(null);
+
+      int textViewId = getResources().getIdentifier("android:id/ac", null, null);
+//      TextView tv = (TextView) d.findViewById(textViewId);
+//      tv.setTextColor(getResources().getColor(R.color.my_color));
+//      getSupportActionBar().setBackgroundDrawable(getResources().getDrawable(android.R.drawable.title_bar));
+//      assert getSupportActionBar() != null;
+//      getSupportActionBar().setDisplayShowTitleEnabled(false);
 
       tvName = findViewById(R.id.tv_name);
       tvSize = findViewById(R.id.tv_size);
@@ -54,7 +67,7 @@ public class DownloadViewerNew extends AppCompatActivity
       file = i.getStringExtra(DownloadServiceNew.XTR_FILE);
       date = new Date(i.getLongExtra(DownloadServiceNew.XTR_DATE, -1));
       tvName.setText(name);
-      tvSize.setText(String.format("%dKB", size / 1000));
+      tvSize.setText(String.format(getString(R.string.format_size), size / 1000));
       tvDate.setText(Html.fromHtml(date.toString())); // TODO Format it correctly
 
       if(i.getBooleanExtra(DownloadServiceNew.XTR_IS_DOWNLOADING, false))

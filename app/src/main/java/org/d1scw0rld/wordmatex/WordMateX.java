@@ -482,7 +482,7 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
             break;
 
          case R.id.action_settings:
-            startActivity(new Intent(this, Settings.class));
+            startActivity(new Intent(this, SettingsNew.class));
             break;
 
          case R.id.action_dict_downloader:
@@ -720,7 +720,7 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
       currentDict = n;
       setTitle(dicts[n].title);
 
-      WordListAdapterNew wordListAdapterNew = new WordListAdapterNew(dicts[n], this);
+      WordListAdapterNew wordListAdapterNew = new WordListAdapterNew(this, dicts[n], this);
       wordListAdapterNew.setOnItemClickListener(new WordListAdapterNew.OnItemClickListener()
       {
          @Override

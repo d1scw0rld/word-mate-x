@@ -4,8 +4,6 @@
           android:versionCode="20090508"
           android:versionName="1.2">
 
-    <uses-sdk android:minSdkVersion="2"/>
-
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
@@ -40,6 +38,11 @@
             android:name=".Settings"
             android:label="@string/settings"/>
         <activity
+            android:name=".SettingsNew"
+            android:label="@string/settings"
+            android:theme="@style/AppTheme"/>
+
+        <activity
             android:name=".Downloader"
             android:label="@string/downloader"
             android:launchMode="singleTop">
@@ -58,13 +61,12 @@
 
         <activity
             android:name=".DownloadViewerNew"
-            android:theme="@style/Theme.AppCompat.Dialog.Alert"
+            android:theme="@style/AppTheme.Dialog"
             />
 
         <service android:name=".DownloadService"/>
 
-        <service android:name=".DownloadServiceNew"
-                 android:theme="@style/AppTheme"/>
+        <service android:name=".DownloadServiceNew"/>
 
         <activity android:name=".DownloaderNew"
                   android:theme="@style/AppTheme">

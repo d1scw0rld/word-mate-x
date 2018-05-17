@@ -222,7 +222,7 @@ public class DownloaderNew extends AppCompatActivity
          holder.tvTitle.setText(metadata.getName());
          if(metadata instanceof FileMetadata)
          {
-            holder.tvSize.setText(String.valueOf(((FileMetadata)metadata).getSize() / 1000) + "KB");
+            holder.tvSize.setText(String.format(getString(R.string.format_size), ((FileMetadata)metadata).getSize() / 1000));
          }
          else
             holder.tvSize.setText(null);
