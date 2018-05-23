@@ -10,6 +10,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v4.app.NotificationCompat;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.dropbox.core.DbxException;
@@ -23,6 +24,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Date;
@@ -51,6 +53,8 @@ public class DownloadServiceNew extends Service
          XTR_FILE               = "file",
          XTR_IS_DOWNLOADING     = "is_downloading";
 
+   final static String TAG = "DOWNLOAD_SERVICE";
+
    private final static String NTF_CHN = "dict_download_channel";
 
 
@@ -60,17 +64,42 @@ public class DownloadServiceNew extends Service
 
    private DbxClientV2 dbxClient;
 
-   Handler handler = new Handler()
+   static class IncomingHandler extends Handler
    {
+      private final WeakReference<DownloadServiceNew> mService;
 
+      IncomingHandler(DownloadServiceNew service)
+      {
+         mService = new WeakReference<>(service);
+      }
+
+      @Override
       public void handleMessage(Message msg)
       {
-         done(msg.what);
+         DownloadServiceNew service = mService.get();
+         if(service != null)
+         {
+            Log.i(TAG, "msg " + msg.what);
+            service.done(msg.what);
+         }
       }
-   };
+   }
+
+   IncomingHandler handler;
+
+//   Handler handler = new Handler()
+//   {
+//
+//      @Override
+//      public void handleMessage(Message msg)
+//      {
+//         done(msg.what);
+//      }
+//   };
 
    public void onCreate()
    {
+      Log.i(TAG, "Service created");
       tasks = new TreeMap<>();
       nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
       DbxRequestConfig requestConfig = DbxRequestConfig.newBuilder("word-mate-x")
@@ -78,6 +107,7 @@ public class DownloadServiceNew extends Service
                                                        .build();
       dbxClient = new DbxClientV2(requestConfig, DownloaderNew.ACCESS_TOKEN);
 
+      handler = new IncomingHandler(this);
    }
 
    public IBinder onBind(Intent intent)
@@ -87,6 +117,8 @@ public class DownloadServiceNew extends Service
 
    public void onStart(Intent intent, int startId)
    {
+      Log.i(TAG, "Service start");
+
       Task t;
 
       int id = intent.getIntExtra(XTR_ID, 0);
@@ -102,6 +134,7 @@ public class DownloadServiceNew extends Service
                t.file = intent.getStringExtra(XTR_FILE);
                t.date = new Date(intent.getLongExtra(XTR_DATE, -1));
                tasks.put(id, t);
+               Log.i(TAG, "Task add " + t.name);
 
                showToast(getString(R.string.download) + ": " + t.name);
 
@@ -116,6 +149,8 @@ public class DownloadServiceNew extends Service
                t.stop = true;
                nm.cancel(id);
                tasks.remove(valueOf(id));
+               Log.i(TAG, "Task cancel " + t.name);
+               Log.i(TAG, "Tasks " + tasks.size());
                showToast(getString(R.string.cancel_download)
                                + ": "
                                + t.name);
@@ -169,7 +204,7 @@ public class DownloadServiceNew extends Service
 //         else
 //            notification = oNotificationBuilder.getNotification();
 
-         startForeground(id, notification); // TODO Fix it. It just replace setForeground
+         startForeground(id, notification);
 
       }
       else
@@ -180,9 +215,14 @@ public class DownloadServiceNew extends Service
 
    void done(int id)
    {
+      if(tasks.size()>0)
+         Log.i(TAG, "Remove " + id + " " + tasks.get(id).name);
+
       tasks.remove(id);
+      Log.i(TAG, "Tasks " + tasks.size());
       if(tasks.size() == 0)
       {
+         Log.i(TAG, "Service stop");
          stopSelf();
       }
    }
