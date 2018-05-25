@@ -1,67 +1,43 @@
 package org.d1scw0rld.wordmatex;
 
-import android.app.Activity;
 import android.os.Bundle;
-import android.widget.CheckBox;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
-import org.d1scw0rld.wordmatex.R;
+import android.support.annotation.NonNull;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.preference.PreferenceFragmentCompat;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 
-public class Settings extends Activity
+public class SettingsNew extends AppCompatActivity
 {
-   CheckBox notify;
-   CheckBox wordlist;
-
    protected void onCreate(Bundle savedInstanceState)
    {
       super.onCreate(savedInstanceState);
-      setContentView(R.layout.settings);
-      wordlist = (CheckBox) findViewById(R.id.wordlist);
-      notify = (CheckBox) findViewById(R.id.notify);
+      getSupportFragmentManager().beginTransaction().replace(android.R.id.content, new MyPreferenceFragment()).commit();
    }
 
-   protected void onStart()
+   public static class MyPreferenceFragment extends PreferenceFragmentCompat
    {
-      super.onStart();
-      wordlist.setChecked(getPref("Wordlist", true));
-      notify.setChecked(getPref("Notify", true));
-      wordlist.setOnCheckedChangeListener(new OnCheckedChangeListener()
+
+
+      @Override
+      public View onCreateView(LayoutInflater inflater,
+                               ViewGroup container,
+                               Bundle savedInstanceState)
       {
-         
-         @Override
-         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
-         {
-            putPref("Wordlist", isChecked);
-            
-         }
-      });
-      this.notify.setOnCheckedChangeListener(new OnCheckedChangeListener()
+         return super.onCreateView(inflater, container, savedInstanceState);
+      }
+
+      @Override
+      public void onCreatePreferences(Bundle savedInstanceState, String rootKey)
       {
-         
-         @Override
-         public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
-         {
-            putPref("Notify", isChecked);
-            if(isChecked)
-            {
-               putPref("Update", MODE_PRIVATE);
-            }
-         }
-      });
-   }
+         addPreferencesFromResource(R.xml.preference_screen);
+      }
 
-   boolean getPref(String key, boolean defValue)
-   {
-      return getSharedPreferences("Main", MODE_PRIVATE).getBoolean(key, defValue);
-   }
-
-   void putPref(String key, boolean value)
-   {
-      getSharedPreferences("Main", MODE_PRIVATE).edit().putBoolean(key, value).commit();
-   }
-
-   void putPref(String key, int value)
-   {
-      getSharedPreferences("Main", MODE_PRIVATE).edit().putInt(key, value).commit();
+      @Override
+      public void onViewCreated(@NonNull View view, Bundle savedInstanceState)
+      {
+         super.onViewCreated(view, savedInstanceState);
+      }
    }
 }

@@ -1,12 +1,10 @@
 package org.d1scw0rld.wordmatex;
 
 import android.app.ProgressDialog;
+import android.content.Context;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
-
-import org.d1scw0rld.wordmatex.dictionary.Dict;
-import org.d1scw0rld.wordmatex.dictionary.StarDict;
-import org.d1scw0rld.wordmatex.dictionary.WMDict;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -22,15 +20,19 @@ import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.TreeMap;
 
-public class DictLoader
+import org.d1scw0rld.wordmatex.dictionary.Dict;
+import org.d1scw0rld.wordmatex.dictionary.StarDict;
+import org.d1scw0rld.wordmatex.dictionary.WMDict;
+
+class DictLoaderNew
 {
    static final int bufferSize = 65536;
-   int currentFile;
-   ProgressDialog dialog;
-   TreeMap<String, Dict> dicts;
-   ArrayList<File> files;
+   private int currentFile;
+   private ProgressDialog dialog;
+   private TreeMap<String, Dict> dicts;
+   private ArrayList files;
 //   Handler handler = new C00001();
-   Handler handler = new Handler()
+   private Handler handler = new Handler()
    {
       public void handleMessage(Message msg)
       {
@@ -39,9 +41,9 @@ public class DictLoader
             dialog.dismiss();
             dialog = null;
          }
-         DictLoader dictLoader = DictLoader.this;
+         DictLoaderNew dictLoader = DictLoaderNew.this;
          dictLoader.currentFile += msg.what;
-         if(DictLoader.this.currentFile < files.size())
+         if(DictLoaderNew.this.currentFile < files.size())
          {
             File file = (File) files.get(currentFile);
             if(file.getName().endsWith(".dwm"))
@@ -59,7 +61,7 @@ public class DictLoader
       }
    };
    boolean stop;
-   WordMate wm;
+   IWordMate wm;
 
 //   class C00001 extends Handler
 //   {
@@ -110,12 +112,12 @@ public class DictLoader
          try
          {
             DataInputStream in = new DataInputStream(new BufferedInputStream(new FileInputStream(this.wordFile),
-                                                                             DictLoader.bufferSize));
+                                                                             DictLoaderNew.bufferSize));
             File tmpFile = File.createTempFile(this.indexFile.getName(),
                                                null,
                                                this.indexFile.getParentFile());
             DataOutputStream out = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(tmpFile, false),
-                                                                                 DictLoader.bufferSize));
+                                                                                 DictLoaderNew.bufferSize));
             int length = (int) this.wordFile.length();
             int interval = length / 100;
             int progress = 0;
@@ -159,12 +161,16 @@ public class DictLoader
       }
    }
 
-   DictLoader(WordMate wm)
+   DictLoaderNew(IWordMate wm)
    {
       this.wm = wm;
       dicts = new TreeMap();
       files = new ArrayList();
-      File dir = new File("/sdcard/wordmate/");
+//      File dir = new File("/sdcard/wordmate/");
+//      File dir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/wordmate/");
+      File dir = new File(WordMateX.FILES_PATH);
+//      File dir = new File(Environment.getDataDirectory().getPath() + "/wordmate/");
+
       if(!dir.exists())
       {
          dir.mkdirs();
@@ -309,9 +315,9 @@ public class DictLoader
             handler.sendEmptyMessage(1);
             return;
          }
-         dialog = new ProgressDialog(this.wm);
+         dialog = new ProgressDialog(this.wm.getContext());
          dialog.setTitle(title);
-         dialog.setMessage(wm.getString(R.string.stardict_index));
+         dialog.setMessage(wm.getContext().getString(R.string.stardict_index));
          dialog.setCancelable(false);
          dialog.setProgressStyle(1);
          dialog.show();
@@ -319,5 +325,14 @@ public class DictLoader
          return;
       }
       handler.sendEmptyMessage(1);
+   }
+
+   public interface IWordMate extends IError
+   {
+      void onLoad(Dict[] dicts);
+
+      void showAlert(String name, int error_format);
+
+      Context getContext();
    }
 }

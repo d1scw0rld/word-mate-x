@@ -1,67 +1,86 @@
 package org.d1scw0rld.wordmatex;
 
-import android.app.Activity;
 import android.app.AlertDialog.Builder;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.Environment;
+import android.support.v7.app.AppCompatActivity;
 import android.text.Html;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.Window;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.io.File;
+import java.text.Format;
+import java.util.Calendar;
+import java.util.Date;
 
-public class DownloadViewer extends Activity
+public class DownloadViewerNew extends AppCompatActivity
 {
-   Button button;
-   int downloads;
-   TextView downloadsView;
-   String file;
-   int id;
-   String info;
-   TextView infoView;
-   int size;
-   TextView sizeView;
-   String title;
-   TextView titleView;
-   String user;
-   TextView userView;
+   private int id;
+
+   private long size;
+
+   private String file,
+         name;
+
+   private Date date;
+
+   private TextView tvSize,
+         tvName,
+         tvDate;
+
+   private Button button;
 
    protected void onCreate(Bundle savedInstanceState)
    {
+//      boolean b= requestWindowFeature(Window.FEATURE_NO_TITLE);
       super.onCreate(savedInstanceState);
-      setContentView(R.layout.download_viewer);
-      titleView = (TextView) findViewById(R.id.tv_name);
-      userView = (TextView) findViewById(R.id.user);
-      sizeView = (TextView) findViewById(R.id.size);
-      downloadsView = (TextView) findViewById(R.id.downloads);
-      infoView = (TextView) findViewById(R.id.tv_date);
-      button = (Button) findViewById(R.id.button);
+      supportRequestWindowFeature(Window.FEATURE_NO_TITLE);
+//      getSupportActionBar().hide(); //<< this
+      setContentView(R.layout.download_viewer_new);
+
+//      setTitle(null);
+
+//      int textViewId = getResources().getIdentifier("android:id/ac", null, null);
+//      TextView tv = (TextView) d.findViewById(textViewId);
+//      tv.setTextColor(getResources().getColor(R.color.my_color));
+//      getSupportActionBar().setBackgroundDrawable(getResources().getDrawable(android.R.drawable.title_bar));
+//      assert getSupportActionBar() != null;
+//      getSupportActionBar().setDisplayShowTitleEnabled(false);
+
+      tvName = findViewById(R.id.tv_name);
+      tvSize = findViewById(R.id.tv_size);
+      tvDate = findViewById(R.id.tv_date);
+      button = findViewById(R.id.button);
    }
 
    protected void onStart()
    {
       super.onStart();
       Intent i = getIntent();
-      id = i.getIntExtra(DownloadService.XTR_ID, 0);
-      size = i.getIntExtra(DownloadService.XTR_SIZE, 0);
-      downloads = i.getIntExtra(DownloadService.XTR_DOWNLOADS, 0);
-      title = i.getStringExtra(DownloadService.XTR_TITLE);
-      info = i.getStringExtra(DownloadService.XTR_INFO);
-      user = i.getStringExtra(DownloadService.XTR_USER);
-      file = i.getStringExtra(DownloadService.XTR_FILE);
-      titleView.setText(this.title);
-      userView.setText(this.user);
-      sizeView.setText(new StringBuilder(String.valueOf(Integer.toString(size / 1000))).append("KB").toString());
-      downloadsView.setText(new StringBuilder(String.valueOf(Integer.toString(downloads))).append(" ")
-                                                                                          .append(getString(R.string.downloads))
-                                                                                          .toString());
-      infoView.setText(Html.fromHtml(this.info));
-      if(i.getBooleanExtra("isDownloading", false))
+      id = i.getIntExtra(DownloadServiceNew.XTR_ID, 0);
+      size = i.getLongExtra(DownloadServiceNew.XTR_SIZE, 0);
+      name = i.getStringExtra(DownloadServiceNew.XTR_NAME);
+      file = i.getStringExtra(DownloadServiceNew.XTR_FILE);
+      date = new Date(i.getLongExtra(DownloadServiceNew.XTR_DATE, -1));
+      Calendar calendar = Calendar.getInstance();
+      calendar.setTime(date);
+      String sDateModified = String.format(getString(R.string.format_date),
+                                           calendar.get(Calendar.DAY_OF_MONTH),
+                                           calendar.get(Calendar.MONTH),
+                                           calendar.get(Calendar.YEAR),
+                                           calendar.get(Calendar.HOUR_OF_DAY),
+                                           calendar.get(Calendar.MINUTE));
+      tvName.setText(name);
+      tvSize.setText(String.format(getString(R.string.format_size), size / 1000));
+//      tvDate.setText(Html.fromHtml(date.toString())); // TODO Format it correctly
+      tvDate.setText(sDateModified); // TODO Format it correctly
+
+      if(i.getBooleanExtra(DownloadServiceNew.XTR_IS_DOWNLOADING, false))
       {
          button.setText(R.string.cancel_download);
          button.setOnClickListener(new OnClickListener()
@@ -83,18 +102,18 @@ public class DownloadViewer extends Activity
          {
             if(!Environment.getExternalStorageState().startsWith("mounted"))
             {
-               new Builder(DownloadViewer.this).setIcon(android.R.drawable.ic_dialog_alert)
-                                               .setTitle(R.string.downloader)
-                                               .setMessage(R.string.no_sdcard)
-                                               .setNeutralButton(android.R.string.cancel, null)
-                                               .show();
+               new Builder(DownloadViewerNew.this).setIcon(android.R.drawable.ic_dialog_alert)
+                                                  .setTitle(R.string.downloader)
+                                                  .setMessage(R.string.no_sdcard)
+                                                  .setNeutralButton(android.R.string.cancel, null)
+                                                  .show();
             }
-            else if(new File(DownloadViewer.this.file).exists())
+            else if(new File(WordMateX.FILES_PATH + DownloadViewerNew.this.file.substring(1)).exists())
             {
-               new Builder(DownloadViewer.this).setIcon(android.R.drawable.ic_dialog_alert)
-                                               .setTitle(R.string.downloader)
-                                               .setMessage(R.string.overwrite)
-                                               .setPositiveButton(R.string.yes,
+               new Builder(DownloadViewerNew.this).setIcon(android.R.drawable.ic_dialog_alert)
+                                                  .setTitle(R.string.downloader)
+                                                  .setMessage(R.string.overwrite)
+                                                  .setPositiveButton(R.string.yes,
                                                new DialogInterface.OnClickListener()
                                                {
                                                   @Override
@@ -104,8 +123,8 @@ public class DownloadViewer extends Activity
                                                                         
                                                   }
                                                })
-                                               .setNegativeButton(R.string.no, null)
-                                               .show();
+                                                  .setNegativeButton(R.string.no, null)
+                                                  .show();
             }
             else
             {
@@ -124,35 +143,23 @@ public class DownloadViewer extends Activity
 
    void download()
    {
-      Intent i = new Intent(this, DownloadService.class);
-      i.putExtra(DownloadService.XTR_ACTION, DownloadService.ACT_DOWNLOAD);
-      i.putExtra(DownloadService.XTR_ID, id);
-      i.putExtra(DownloadService.XTR_SIZE, size);
-      i.putExtra(DownloadService.XTR_DOWNLOADS, downloads);
-      i.putExtra(DownloadService.XTR_TITLE, title);
-      i.putExtra(DownloadService.XTR_INFO, info);
-      i.putExtra(DownloadService.XTR_USER, user);
-      i.putExtra(DownloadService.XTR_FILE, file);
+      Intent i = new Intent(this, DownloadServiceNew.class);
+      i.putExtra(DownloadServiceNew.XTR_ACTION, DownloadServiceNew.ACT_DOWNLOAD);
+      i.putExtra(DownloadServiceNew.XTR_ID, id);
+      i.putExtra(DownloadServiceNew.XTR_SIZE, size);
+      i.putExtra(DownloadServiceNew.XTR_NAME, name);
+      i.putExtra(DownloadServiceNew.XTR_DATE, date);
+      i.putExtra(DownloadServiceNew.XTR_FILE, file);
       startService(i);
       finish();
    }
 
    void cancel()
    {
-      Intent i = new Intent(this, DownloadService.class);
-      i.putExtra(DownloadService.XTR_ACTION, DownloadService.ACT_CANCEL);
-      i.putExtra(DownloadService.XTR_ID, id);
+      Intent i = new Intent(this, DownloadServiceNew.class);
+      i.putExtra(DownloadServiceNew.XTR_ACTION, DownloadServiceNew.ACT_CANCEL);
+      i.putExtra(DownloadServiceNew.XTR_ID, id);
       startService(i);
       finish();
-   }
-
-   void showToast(int id)
-   {
-      Toast.makeText(this, id, Toast.LENGTH_SHORT).show();
-   }
-
-   void showToast(String s)
-   {
-      Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
    }
 }
