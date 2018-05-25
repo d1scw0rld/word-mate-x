@@ -89,7 +89,7 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
    protected void onCreate(Bundle savedInstanceState)
    {
       super.onCreate(savedInstanceState);
-      setContentView(R.layout.activity_main_new);
+      setContentView(R.layout.main);
 
       toolbar = findViewById(R.id.toolbar);
       setSupportActionBar(toolbar);
