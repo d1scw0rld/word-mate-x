@@ -36,15 +36,16 @@ import java.io.IOException;
 
 import org.d1scw0rld.wordmatex.dictionary.Dict;
 
-public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordMate
+public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
 {
    final static String FILES_PATH = Environment.getExternalStorageDirectory().getAbsolutePath() + "/wordmate/";
+
+   private final static String PREF_FILE = "main";
 
    private final static String PREF_DICT = "dictionary",
          PREF_WORD = "word",
          PREF_VIEW = "view",
          PREF_WORD_LIST = "word_list";
-
 
 //   private final static String[] PERMISSIONS = {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
    private static String[] PERMISSIONS;
@@ -63,7 +64,7 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
 
    private ViewSwitcher switcher;
 
-   private DictLoaderNew dictLoader;
+   private DictLoader dictLoader;
 
    private Dict[] dicts;
 
@@ -84,8 +85,6 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
 
    private Toolbar toolbar;
 
-//   private RecyclerView.SmoothScroller smoothScroller;
-
    @Override
    protected void onCreate(Bundle savedInstanceState)
    {
@@ -96,9 +95,6 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
       setSupportActionBar(toolbar);
       assert getSupportActionBar() != null;
       getSupportActionBar().setDisplayShowTitleEnabled(false);
-//      toolbar.setTitle(getTitle());
-
-//      getSupportFragmentManager().popBackStack();
 
       rvWordList = findViewById(R.id.rv_word_list);
       rvWordList.setItemAnimator(new DefaultItemAnimator());
@@ -107,7 +103,7 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
 
       switcher = findViewById(R.id.switcher);
 
-      // Meesage ACT_VIEW
+      // Message ACT_VIEW
       messageView = findViewById(R.id.messageView);
       textView = findViewById(R.id.textView);
       wordView = findViewById(R.id.wordView);
@@ -135,20 +131,6 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
          }
       });
 
-
-//      if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-//            && ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED)
-//      {
-//         ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_EXTERNAL_STORAGE}, 1);
-////         dialog.dismiss();
-//      }
-
-//      if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-//            && !hasPermissions(this, PERMISSIONS))
-//      {
-//         ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
-//      }
-
       dicts = new Dict[0];
       currentWord = -1;
    }
@@ -161,7 +143,7 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
       {
          if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
          {
-            dictLoader = new DictLoaderNew(this);
+            dictLoader = new DictLoader(this);
          }
          else
          {
@@ -180,11 +162,11 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
       {
          ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
       }
-      else
-      {
-
-//         dictLoader = new DictLoaderNew(this);
-      }
+//      else
+//      {
+//
+////         dictLoader = new DictLoader(this);
+//      }
 
       switcher.setInAnimation(null);
       switcher.setOutAnimation(null);
@@ -235,9 +217,6 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
       }
    }
 
-   //      searchView.getLocationOnScreen(location);
-
-   //   @Override
    @Override
    public void setTitle(CharSequence title)
    {
@@ -252,20 +231,11 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
       inflater.inflate(R.menu.menu_main, menu);
 
       final MenuItem searchItem = menu.findItem(R.id.action_search);
-//      final SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
-//      final SearchView searchView = (SearchView) searchItem.getActionView();
       searchView = (SearchView) searchItem.getActionView();
-
-//      searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
 
       SearchManager searchManager = (SearchManager) this.getSystemService(Context.SEARCH_SERVICE);
       assert searchManager != null;
       searchView.setSearchableInfo(searchManager.getSearchableInfo(this.getComponentName()));
-
-
-//      searchView.setIconifiedByDefault(false);
-////      searchView.setIconified(false);
-//      searchItem.expandActionView();
 
 
       toolbar.getViewTreeObserver()
@@ -285,12 +255,9 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
                       int[] location = new int[2];
                       menuItem.getLocationOnScreen(location);
                       int x = location[0]; //x coordinate
-//                      int y = location[1]; //y coordinate
-//                      int w = menuItem.getWidth();
 
                       ActionMenuView.LayoutParams params =
                             new ActionMenuView.LayoutParams(ActionMenuView.LayoutParams.WRAP_CONTENT, ActionMenuView.LayoutParams.MATCH_PARENT);
-//               Toolbar.LayoutParams params = new Toolbar.LayoutParams(Toolbar.LayoutParams.WRAP_CONTENT, Toolbar.LayoutParams.MATCH_PARENT);
                       params.width = x;
 
                      /*
@@ -354,37 +321,6 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
                 }
              });
 
-//      Toolbar.LayoutParams params = new Toolbar.LayoutParams(Toolbar.LayoutParams.WRAP_CONTENT, Toolbar.LayoutParams.MATCH_PARENT);
-//      params.width=800;
-//      searchView.setLayoutParams(params);
-//      menu.findItem(R.id.action_search).expandActionView();
-
-//      searchView.setIconified(false);
-//      AutoCompleteTextView autoComplete = (AutoCompleteTextView) searchView.findViewById(R.id.search_src_text);
-//      Class<?> clazz = null;
-//      try
-//      {
-//         clazz = Class.forName("android.widget.SearchView$SearchAutoComplete");
-//         SpannableStringBuilder stopHint = new SpannableStringBuilder("  ");
-//         stopHint.append("Hint");
-//         // Add the icon as an spannable
-//         Drawable searchIcon = getResources().getDrawable(R.drawable.ic_search_white_24dp);
-//         Method textSizeMethod = clazz.getMethod("getTextSize");
-//         Float rawTextSize = (Float) textSizeMethod.invoke(autoComplete);
-//         int textSize = (int) (rawTextSize * 1.25);
-//         searchIcon.setBounds(0, 0, textSize, textSize);
-//         stopHint.setSpan(new ImageSpan(searchIcon), 1, 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-//         // Set the new hint text
-//         Method setHintMethod = clazz.getMethod("setHint", CharSequence.class);
-//         setHintMethod.invoke(autoComplete, stopHint);
-//      }
-//      catch(Exception e)
-//      {
-//         // Set default hint
-//         searchView.setQueryHint("Search");
-//         e.printStackTrace();
-//      }
-
       searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener()
       {
 
@@ -401,14 +337,14 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
             return true;
          }
       });
-
+// Todo check it. Shall search disappear?
 //      if(enableWordlist)
 //      {
 ////         goButton.setVisibility(View.VISIBLE);
 ////         searchView.setVisibility(View.VISIBLE);
 //      }
 
-      dictLoader = new DictLoaderNew(this);
+      dictLoader = new DictLoader(this);
       if(!enableWordlist)
       {
          switcher.setDisplayedChild(1);
@@ -482,12 +418,12 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
             break;
 
          case R.id.action_settings:
-            startActivity(new Intent(this, SettingsNew.class));
+            startActivity(new Intent(this, Settings.class));
             break;
 
          case R.id.action_dict_downloader:
 //            startActivity(new Intent(this, Downloader.class));
-            startActivity(new Intent(this, DownloaderNew.class));
+            startActivity(new Intent(this, Downloader.class));
             break;
 
          case R.id.action_dict_info:
@@ -535,7 +471,6 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
    {
       return this;
    }
-   //   View getMenuItemView(Toolbar toolbar, @IdRes int menuItemId) throws IllegalAccessException, NoSuchFieldException
 
    @Override
    public void showAlert(String title, int error_format)
@@ -549,7 +484,6 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
       showAlert(R.string.error, message);
    }
 
-   //      Field mMenuView = Toolbar.class.getDeclaredField("mMenuView");
    @Override
    public void onLoad(Dict[] newDicts)
    {
@@ -617,99 +551,9 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
 
                                                 })
                                                 .create();
-//      rvWordList.setOnItemClickListener(new AdapterView.OnItemClickListener()
-//      {
-//         @Override
-//         public void onItemClick(AdapterView<?> adapterView,
-//                                 View ACT_VIEW,
-//                                 int position,
-//                                 long id)
-//         {
-//            setInput(((TextView) ACT_VIEW).getText().toString());
-//            displayContent(position);
-//         }
-//      });
-
-      /*
-       * Moved in adapter
-       */
-//      rvWordList.setOnItemClickListener(new WordListAdapterNew.OnItemClickListener()
-//      {
-//         @Override
-//         public void OnItemClick(View ACT_VIEW, int pos)
-//         {
-//            setInput(((TextView) ACT_VIEW).getText().toString());
-//            displayContent(pos);
-//         }
-//      });
-
-
-//      dictButton.setOnClickListener(new View.OnClickListener()
-//      {
-//         @Override
-//         public void onClick(View v)
-//         {
-//            dictDialog.show();
-//         }
-//      });
-
-//      goButton.setOnClickListener(new View.OnClickListener()
-//      {
-//
-//         @Override
-//         public void onClick(View v)
-//         {
-//            if(WordMate.this.getRvWordList())
-//            {
-//               displayContent();
-//            }
-//            else
-//            {
-//               displayWordlist();
-//            }
-//         }
-//      });
-//      clearButton.setOnClickListener(new View.OnClickListener()
-//      {
-//         @Override
-//         public void onClick(View v)
-//         {
-//            setInput(null);
-//            onInput(null);
-//         }
-//      });
       setInput(getPref(PREF_WORD, null));
       setDict(getPref(PREF_DICT, 0));
-//      inputField.addTextChangedListener(new InputWatcher(this));
    }
-   //      Field mChildren = menuView.getClass()  //android.support.v7.internal.ACT_VIEW.menu.ActionMenuView
-   //                                .getSuperclass() //android.support.v7.widget.LinearLayoutCompat
-   //                                .getSuperclass() //android.ACT_VIEW.ViewGroup
-   //                                .getDeclaredField("mChildren");
-   //      mChildren.setAccessible(true);
-   //      View[] children = (View[]) mChildren.get(menuView);
-   //      for(View child : children)
-   //      {
-   //         if(child.getId() == menuItemId)
-   //         {
-   //            return child;
-   //         }
-   //      }
-   //      return null;
-   //   {
-   //      MenuItem   searchItem = menu.findItem(R.id.action_search);
-   //      SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
-   ////      int        searchImgId        = android.support.v7.appcompat.R.id.search_button; // I used the explicit layout ID of searchview's ImageView
-   ////      ImageView  v                  = (ImageView) mSearchView.findViewById(searchImgId);
-   ////      v.setImageResource(R.drawable.search_btn);
-   //      int[] location = new int[2];
-   //      int x = location[0]; //x coordinate
-   //      int y = location[1]; //y coordinate
-   //      int w = searchView.getWidth();
-   //
-   //      return super.onPrepareOptionsMenu(menu);
-
-   //      Object menuView = mMenuView.get(toolbar);
 
    void setDict(int n)
    {
@@ -720,8 +564,8 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
       currentDict = n;
       setTitle(dicts[n].title);
 
-      WordListAdapterNew wordListAdapterNew = new WordListAdapterNew(this, dicts[n], this);
-      wordListAdapterNew.setOnItemClickListener(new WordListAdapterNew.OnItemClickListener()
+      WordListAdapter wordListAdapterNew = new WordListAdapter(this, dicts[n]);
+      wordListAdapterNew.setOnItemClickListener(new WordListAdapter.OnItemClickListener()
       {
          @Override
          public void OnItemClick(View view, int pos)
@@ -751,17 +595,17 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
 
    boolean getPref(String key, boolean defValue)
    {
-      return getSharedPreferences("Main", MODE_PRIVATE).getBoolean(key, defValue);
+      return getSharedPreferences(PREF_FILE, MODE_PRIVATE).getBoolean(key, defValue);
    }
 
    int getPref(String key, int defValue)
    {
-      return getSharedPreferences("Main", MODE_PRIVATE).getInt(key, defValue);
+      return getSharedPreferences(PREF_FILE, MODE_PRIVATE).getInt(key, defValue);
    }
 
    String getPref(String key, String defValue)
    {
-      return getSharedPreferences("Main", MODE_PRIVATE).getString(key, defValue);
+      return getSharedPreferences(PREF_FILE, MODE_PRIVATE).getString(key, defValue);
    }
 
 
@@ -787,10 +631,6 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
       }
       searchView.setQuery(word, false);
       searchView.requestFocus();
-
-//      inputField.requestFocus();
-//      inputField.setText(word);
-//      inputField.selectAll();
    }
 
    void onInput()
@@ -823,7 +663,6 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
       if(currentWord != index)
       {
          currentWord = index;
-//         scroll.scrollTo(0, 0);
          rvWordList.scrollTo(0, 0);
          try
          {
@@ -870,8 +709,6 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
    void displayWordlist(int index)
    {
       showWordlistView();
-//      rvWordList.getLayoutManager()
-//                  .scrollToPosition(index);
       ((LinearLayoutManager) rvWordList.getLayoutManager()).scrollToPositionWithOffset(index, 0);
 
       /*
@@ -953,18 +790,14 @@ public class WordMateX extends AppCompatActivity implements DictLoaderNew.IWordM
       }
       catch(Exception e)
       {
+         e.printStackTrace();
       }
       new AlertDialog.Builder(this).setIcon(R.drawable.icon)
                                    .setTitle(R.string.app_name)
                                    .setMessage(String.format(getString(R.string.about_msg),
                                                              versionName,
                                                              versionCode))
-//                                         "Version : $versionName\nBuild : $versionCode\n\nCopyright 2009 Hongbo\nAll rights reserved\n\nhttp://www.wordmate.net\nhongbo@wordmate.net\n".replace(
-//                                               "$versionName",
-//                                               versionName)
-//                                                                                                                                                                                       .replace(
-//                                                                                                                                                                                             "$versionCode",
-//                                                                                                                                                                                             versionCode))
+
                                    .setNegativeButton("Web", new DialogInterface.OnClickListener()
                                    {
                                       @Override

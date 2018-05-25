@@ -46,7 +46,8 @@
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
             android:text="@string/sample_title"
-            android:textStyle="bold"/>
+            android:textStyle="bold"
+            android:background="@android:drawable/title_bar"/>
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"

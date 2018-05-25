@@ -5,7 +5,7 @@
     <string name="dict_dialog">Choose a dictionary</string>
     <string name="error_format">Incorrect format.</string>
     <string name="error_format_version">The version of dictionary format is too high, please upgrade WordMate to use it.</string>
-    <string name="stardict_index">Generating index for StarDict dictionary...</string>
+    <string name="stardict_index">Generating index for StarDict dictionary…</string>
     <string name="stardict_dz">The file is compressed, please decompress it first.</string>
     <string name="about">About</string>
     <string name="dict_info">Dict info</string>
@@ -18,7 +18,7 @@
     <string name="no_dict">No dictionary data files.</string>
     <string name="no_sdcard">No SD card.\n\nPlease insert an SD card.</string>
     <string name="no_result">Sorry, no results found.</string>
-    <string name="loading">Loading...</string>
+    <string name="loading">Loading…</string>
     <string name="retry">Retry</string>
     <string name="connection_error">Connection error</string>
     <string name="downloader">Dict downloader</string>
@@ -37,9 +37,10 @@
     <string name="about_msg">Version : %1$s Build : %2$s  Copyright 2009 Hongbo All rights reserved  http://www.wordmate.net hongbo@wordmate.net</string>
     <string name="sample_size">size</string>
     <string name="sample_name">Name</string>
-    <string name="sample_size_1">100KB</string>
+    <string name="sample_size_1">100 KB</string>
     <string name="sample_date">01.01.2010</string>
     <string name="modified">Modified</string>
     <string name="size">Size</string>
-    <string name="format_size">%dKB</string>
+    <string name="format_size">%,d KB</string>
+    <string name="format_date">%1$02d/%2$02d/%3$d %4$d:%5$02d</string>
 </resources>
