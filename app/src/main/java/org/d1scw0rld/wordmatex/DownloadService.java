@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
@@ -30,7 +31,6 @@ import java.net.URLConnection;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -153,7 +153,7 @@ public class DownloadService extends Service
                showToast(getString(R.string.download) + ": " + t.getName());
 
 //               new RunnerNew(t).start();
-               new Runner(t).start();
+               new downloadDictTask(t).execute();
             }
             break;
 
@@ -395,7 +395,7 @@ public class DownloadService extends Service
 //   }
 //
 
-   class Runner extends Thread
+   class downloadDictTask extends AsyncTask<Void, Integer, Void>
    {
       private Task task;
 
@@ -407,14 +407,15 @@ public class DownloadService extends Service
 
       private PendingIntent pi;
 
-      Runner(Task task)
+      downloadDictTask(Task task)
       {
          this.task = task;
 
          oNotificationBuilder = new NotificationCompat.Builder(DownloadService.this, NTF_CHN);
       }
 
-      public void run()
+      @Override
+      protected Void doInBackground(Void... voids)
       {
          downloadStarted();
 
@@ -496,8 +497,7 @@ public class DownloadService extends Service
                if(progress != progressNew)
                {
                   progress = progressNew;
-
-                  sendProgress(progress);
+                  publishProgress(progress);
                }
             }
 
@@ -578,12 +578,12 @@ public class DownloadService extends Service
                            outputStream.close();
                            zipFile.close();
                            tmpFile.delete();
-                           return;
+                           return null;
                         }
                         else if(percent != 100)
                         {
                            percent += 1;
-                           sendProgress(percent);
+                           publishProgress(percent);
                         }
                      }
                      inputStream.close();
@@ -603,7 +603,8 @@ public class DownloadService extends Service
                   {
                      f.delete();
                   }
-                  it.next().renameTo(f);
+                  it.next()
+                    .renameTo(f);
                }
             }
 
@@ -659,6 +660,17 @@ public class DownloadService extends Service
             }
          }
 
+         return null;
+      }
+
+      @Override
+      protected void onProgressUpdate(Integer... values)
+      {
+         oNotificationBuilder.setProgress(100, values[0], false);
+
+         notification = oNotificationBuilder.build();
+
+         nm.notify(task.getId(), notification);
       }
 
       private void downloadStarted()
@@ -740,14 +752,14 @@ public class DownloadService extends Service
       }
 
 
-      private void sendProgress(int progress)
-      {
-         oNotificationBuilder.setProgress(100, progress, false);
-
-         notification = oNotificationBuilder.build();
-
-         nm.notify(task.getId(), notification);
-      }
+//      private void sendProgress(int progress)
+//      {
+//         oNotificationBuilder.setProgress(100, progress, false);
+//
+//         notification = oNotificationBuilder.build();
+//
+//         nm.notify(task.getId(), notification);
+//      }
 
       private void unzip(String zipFilePath, String unzipAtLocation) throws Exception
       {
@@ -840,6 +852,140 @@ public class DownloadService extends Service
 
             throw new RuntimeException("Can not create dir " + dir);
          }
+      }
+   }
+
+   class unzipDictTask extends AsyncTask<File, Integer, Void>
+   {
+      OutputStream outputStream = null;
+      InputStream  inputStream  = null;
+
+      @Override
+      protected Void doInBackground(File... filesInput)
+      {
+         File file = filesInput[0];
+         unzipStarted();
+
+         LinkedList<File> files = new LinkedList<>();
+         ZipFile zipFile = null;
+         try
+         {
+
+            File dir = new File(WordMateX.FILES_PATH + file.getName()
+                                                           .substring(0,
+                                                                      file.getName()
+                                                                          .indexOf(".zip")));
+            if(!dir.exists())
+            {
+               dir.mkdirs();
+            }
+
+            Enumeration<? extends ZipEntry> entries = zipFile.entries();
+            File entryFile;
+            while(entries.hasMoreElements())
+            {
+               ZipEntry zipEntry = entries.nextElement();
+               if(!zipEntry.isDirectory())
+               {
+                  entryFile = new File(dir, zipEntry.getName());
+                  int size = (int) zipEntry.getSize();
+                  unzipEntryStart(zipEntry.getName());
+
+                  inputStream = new BufferedInputStream(zipFile.getInputStream(zipEntry), BUFFER_SIZE);
+                  File tmpFile = File.createTempFile(entryFile.getName(), null, dir);
+                  outputStream = new BufferedOutputStream(new FileOutputStream(tmpFile), BUFFER_SIZE);
+                  int interval = size / 100;
+                  if(interval < 1)
+                  {
+                     interval = 1;
+                  }
+                  int percent = 0;
+                  int p = 0;
+                  int to = 0;
+                  while(p < size)
+                  {
+                     to += interval;
+                     if(to > size)
+                     {
+                        to = size;
+                     }
+                     while(p < to)
+                     {
+                        outputStream.write(inputStream.read());
+                        p += 1;
+                     }
+                     if(task.stop)
+                     {
+                        inputStream.close();
+                        outputStream.close();
+                        zipFile.close();
+                        tmpFile.delete();
+                        return null;
+                     }
+                     else if(percent != 100)
+                     {
+                        percent += 1;
+                        publishProgress(percent);
+                     }
+                  }
+                  inputStream.close();
+                  outputStream.close();
+                  files.add(entryFile);
+                  files.add(tmpFile);
+               }
+            }
+
+            Iterator<File> it = files.iterator();
+            while(it.hasNext())
+            {
+               File f = it.next();
+               if(f.exists())
+               {
+                  f.delete();
+               }
+               it.next()
+                 .renameTo(f);
+            }
+            zipFile = new ZipFile(file);
+         }
+         catch(IOException e)
+         {
+            e.printStackTrace();
+         }
+         finally
+         {
+            try
+            {
+               zipFile.close();
+            }
+            catch(IOException e)
+            {
+               e.printStackTrace();
+            }
+            file.delete();
+         }
+
+         return null;
+      }
+
+      private void unzipStarted()
+      {
+         oNotificationBuilder.setContentTitle(getString(R.string.extract) + ": " + task.getName())
+                             .setContentText(null)
+                             .setSmallIcon(android.R.drawable.stat_sys_download);
+
+         notification = oNotificationBuilder.build();
+
+         nm.notify(task.getId(), notification);
+      }
+
+      private void unzipEntryStart(String sEntry)
+      {
+         oNotificationBuilder.setContentText(sEntry);
+
+         notification = oNotificationBuilder.build();
+
+         nm.notify(task.getId(), notification);
       }
    }
 
