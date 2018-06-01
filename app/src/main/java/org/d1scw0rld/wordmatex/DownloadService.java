@@ -31,6 +31,7 @@ import java.net.URLConnection;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -153,7 +154,7 @@ public class DownloadService extends Service
                showToast(getString(R.string.download) + ": " + t.getName());
 
 //               new RunnerNew(t).start();
-               new downloadDictTask(t).execute();
+               new Runner(t).execute();
             }
             break;
 
@@ -395,7 +396,7 @@ public class DownloadService extends Service
 //   }
 //
 
-   class downloadDictTask extends AsyncTask<Void, Integer, Void>
+   class Runner extends AsyncTask<Void, Integer, Void>
    {
       private Task task;
 
@@ -407,11 +408,21 @@ public class DownloadService extends Service
 
       private PendingIntent pi;
 
-      downloadDictTask(Task task)
+      Runner(Task task)
       {
          this.task = task;
 
          oNotificationBuilder = new NotificationCompat.Builder(DownloadService.this, NTF_CHN);
+      }
+
+      @Override
+      protected void onProgressUpdate(Integer... values)
+      {
+         oNotificationBuilder.setProgress(100, values[0], false);
+
+         notification = oNotificationBuilder.build();
+
+         nm.notify(task.getId(), notification);
       }
 
       @Override
@@ -497,6 +508,7 @@ public class DownloadService extends Service
                if(progress != progressNew)
                {
                   progress = progressNew;
+                  onProgressUpdate();
                   publishProgress(progress);
                }
             }
@@ -663,21 +675,11 @@ public class DownloadService extends Service
          return null;
       }
 
-      @Override
-      protected void onProgressUpdate(Integer... values)
-      {
-         oNotificationBuilder.setProgress(100, values[0], false);
-
-         notification = oNotificationBuilder.build();
-
-         nm.notify(task.getId(), notification);
-      }
-
       private void downloadStarted()
       {
          intent = new Intent(DownloadService.this, DownloadService.class);
          intent.putExtra(XTR_ACTION, DownloadService.ACT_VIEW);
-         intent.putExtra(XTR_DICT_INFO, task);
+         intent.putExtra(XTR_ID, task.getId());
          intent.setAction(Long.toString(System.currentTimeMillis()));
          PendingIntent pi = PendingIntent.getService(DownloadService.this,
                                                      0,
@@ -852,140 +854,6 @@ public class DownloadService extends Service
 
             throw new RuntimeException("Can not create dir " + dir);
          }
-      }
-   }
-
-   class unzipDictTask extends AsyncTask<File, Integer, Void>
-   {
-      OutputStream outputStream = null;
-      InputStream  inputStream  = null;
-
-      @Override
-      protected Void doInBackground(File... filesInput)
-      {
-         File file = filesInput[0];
-         unzipStarted();
-
-         LinkedList<File> files = new LinkedList<>();
-         ZipFile zipFile = null;
-         try
-         {
-
-            File dir = new File(WordMateX.FILES_PATH + file.getName()
-                                                           .substring(0,
-                                                                      file.getName()
-                                                                          .indexOf(".zip")));
-            if(!dir.exists())
-            {
-               dir.mkdirs();
-            }
-
-            Enumeration<? extends ZipEntry> entries = zipFile.entries();
-            File entryFile;
-            while(entries.hasMoreElements())
-            {
-               ZipEntry zipEntry = entries.nextElement();
-               if(!zipEntry.isDirectory())
-               {
-                  entryFile = new File(dir, zipEntry.getName());
-                  int size = (int) zipEntry.getSize();
-                  unzipEntryStart(zipEntry.getName());
-
-                  inputStream = new BufferedInputStream(zipFile.getInputStream(zipEntry), BUFFER_SIZE);
-                  File tmpFile = File.createTempFile(entryFile.getName(), null, dir);
-                  outputStream = new BufferedOutputStream(new FileOutputStream(tmpFile), BUFFER_SIZE);
-                  int interval = size / 100;
-                  if(interval < 1)
-                  {
-                     interval = 1;
-                  }
-                  int percent = 0;
-                  int p = 0;
-                  int to = 0;
-                  while(p < size)
-                  {
-                     to += interval;
-                     if(to > size)
-                     {
-                        to = size;
-                     }
-                     while(p < to)
-                     {
-                        outputStream.write(inputStream.read());
-                        p += 1;
-                     }
-                     if(task.stop)
-                     {
-                        inputStream.close();
-                        outputStream.close();
-                        zipFile.close();
-                        tmpFile.delete();
-                        return null;
-                     }
-                     else if(percent != 100)
-                     {
-                        percent += 1;
-                        publishProgress(percent);
-                     }
-                  }
-                  inputStream.close();
-                  outputStream.close();
-                  files.add(entryFile);
-                  files.add(tmpFile);
-               }
-            }
-
-            Iterator<File> it = files.iterator();
-            while(it.hasNext())
-            {
-               File f = it.next();
-               if(f.exists())
-               {
-                  f.delete();
-               }
-               it.next()
-                 .renameTo(f);
-            }
-            zipFile = new ZipFile(file);
-         }
-         catch(IOException e)
-         {
-            e.printStackTrace();
-         }
-         finally
-         {
-            try
-            {
-               zipFile.close();
-            }
-            catch(IOException e)
-            {
-               e.printStackTrace();
-            }
-            file.delete();
-         }
-
-         return null;
-      }
-
-      private void unzipStarted()
-      {
-         oNotificationBuilder.setContentTitle(getString(R.string.extract) + ": " + task.getName())
-                             .setContentText(null)
-                             .setSmallIcon(android.R.drawable.stat_sys_download);
-
-         notification = oNotificationBuilder.build();
-
-         nm.notify(task.getId(), notification);
-      }
-
-      private void unzipEntryStart(String sEntry)
-      {
-         oNotificationBuilder.setContentText(sEntry);
-
-         notification = oNotificationBuilder.build();
-
-         nm.notify(task.getId(), notification);
       }
    }
 
