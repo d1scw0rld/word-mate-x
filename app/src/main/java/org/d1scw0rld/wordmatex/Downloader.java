@@ -20,6 +20,7 @@ import android.support.v7.widget.Toolbar;
 import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.style.ForegroundColorSpan;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -32,11 +33,20 @@ import com.dropbox.core.DbxException;
 import com.dropbox.core.DbxRequestConfig;
 import com.dropbox.core.http.OkHttp3Requestor;
 import com.dropbox.core.v2.DbxClientV2;
-import com.dropbox.core.v2.files.FileMetadata;
 import com.dropbox.core.v2.files.ListFolderResult;
 import com.dropbox.core.v2.files.Metadata;
 import com.dropbox.core.v2.users.FullAccount;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Locale;
 
@@ -44,13 +54,21 @@ public class Downloader extends AppCompatActivity
 {
    final static String ACCESS_TOKEN = "taEhH2ktguAAAAAAAAABtpz3e_ZHCYP3rZUU7otLbyQZ7OLAWqunkSQpXpw6xi2a";
 
+   final static String URL_DICTS_LIST = "https://www.dropbox.com/s/99p4p71uhf5f0n0/dicts.json?dl=1";
+
    private ArrayList<Metadata> alMetadata = new ArrayList<>();
+
+   private ArrayList<DictInfo> alDictsInfo = new ArrayList<>();
 
    private DictionariesAdapter adDictionaries;
 
+   private DictsInfoAdapter adDictsInfo;
+
    private CoordinatorLayout oCoordinatorLayout;
 
-   private DropBoxTask.Callback callback;
+//   private DropBoxTask.Callback callback;
+
+   private GetDictsInfoTask.Callback getDictsInfoCallback;
 
 //   private ProgressBar oProgressBar;
 
@@ -73,13 +91,16 @@ public class Downloader extends AppCompatActivity
 
       swipeContainer = findViewById(R.id.swipe_container);
       // Setup refresh listener which triggers new data loading
-      swipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+      swipeContainer.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener()
+      {
          @Override
-         public void onRefresh() {
+         public void onRefresh()
+         {
             // Your code to refresh the list here.
             // Make sure you call swipeContainer.setRefreshing(false)
             // once the network request has completed successfully.
-            new DropBoxTask(callback).execute();
+//            new DropBoxTask(callback).execute();
+            new GetDictsInfoTask(getDictsInfoCallback).execute();
          }
       });
       swipeContainer.setColorSchemeResources(R.color.accent);
@@ -94,19 +115,63 @@ public class Downloader extends AppCompatActivity
          }
       });
 
+      adDictsInfo = new DictsInfoAdapter();
+      adDictsInfo.setOnItemClickListener(new OnItemClickListener()
+      {
+         @Override
+         public void OnItemClick(View view, int pos)
+         {
+            view(pos);
+         }
+      });
+
       RecyclerView rvDictionaries = findViewById(R.id.rv_dictionaries);
       rvDictionaries.setItemAnimator(new DefaultItemAnimator());
       rvDictionaries.setLayoutManager(new LinearLayoutManager(this));
       rvDictionaries.addItemDecoration(new DividerItemDecoration(this, DividerItemDecoration.VERTICAL));
-      rvDictionaries.setAdapter(adDictionaries);
+//      rvDictionaries.setAdapter(adDictionaries);
+      rvDictionaries.setAdapter(adDictsInfo);
 
-      callback = new DropBoxTask.Callback()
+//      callback = new DropBoxTask.Callback()
+//      {
+//         @Override
+//         public void onError(Exception e)
+//         {
+////            oProgressBar.setVisibility(View.GONE);
+//
+//            e.printStackTrace();
+//            Snackbar snackbar = Snackbar
+//                  .make(oCoordinatorLayout, R.string.connection_error, Snackbar.LENGTH_LONG)
+//                  .setAction(R.string.retry, new View.OnClickListener()
+//                  {
+//                     @Override
+//                     public void onClick(View view)
+//                     {
+////                        new DropBoxTask(Downloader.this, callback).execute();
+//                        new DropBoxTask(callback).execute();
+//                     }
+//                  });
+//
+//            snackbar.show();
+//         }
+//
+//         @Override
+//         public void onFinish(ArrayList<Metadata> alMetadata)
+//         {
+////            oProgressBar.setVisibility(View.GONE);
+//            swipeContainer.setRefreshing(false);
+//
+//            Downloader.this.alMetadata = alMetadata;
+////            adDictionaries.notifyDataSetChanged();
+//            adDictionaries.notifyAdapterDataSetChanged();
+//         }
+//      };
+
+      getDictsInfoCallback = new GetDictsInfoTask.Callback()
       {
          @Override
          public void onError(Exception e)
          {
-//            oProgressBar.setVisibility(View.GONE);
-
             e.printStackTrace();
             Snackbar snackbar = Snackbar
                   .make(oCoordinatorLayout, R.string.connection_error, Snackbar.LENGTH_LONG)
@@ -115,28 +180,24 @@ public class Downloader extends AppCompatActivity
                      @Override
                      public void onClick(View view)
                      {
-//                        new DropBoxTask(Downloader.this, callback).execute();
-                        new DropBoxTask(callback).execute();
+                        new GetDictsInfoTask(getDictsInfoCallback).execute();
                      }
                   });
-
             snackbar.show();
          }
 
          @Override
-         public void onFinish(ArrayList<Metadata> alMetadata)
+         public void onFinish(ArrayList<DictInfo> alDictsInfo)
          {
-//            oProgressBar.setVisibility(View.GONE);
             swipeContainer.setRefreshing(false);
 
-            Downloader.this.alMetadata = alMetadata;
-//            adDictionaries.notifyDataSetChanged();
-            adDictionaries.notifyAdapterDataSetChanged();
+            Downloader.this.alDictsInfo = alDictsInfo;
+            adDictsInfo.notifyAdapterDataSetChanged();
          }
       };
 
-//      new DropBoxTask(this, callback).execute();
-      new DropBoxTask(callback).execute();
+//      new DropBoxTask(callback).execute();
+      new GetDictsInfoTask(getDictsInfoCallback).execute();
       swipeContainer.setRefreshing(true);
 
    }
@@ -160,7 +221,7 @@ public class Downloader extends AppCompatActivity
          void onFinish(ArrayList<Metadata> alMetadata);
       }
 
-//      DropBoxTask(Downloader activity, Callback callback)
+      //      DropBoxTask(Downloader activity, Callback callback)
       DropBoxTask(Callback callback)
       {
 //         this.context = context;
@@ -251,6 +312,94 @@ public class Downloader extends AppCompatActivity
          callback.onFinish(metadata);
       }
    }
+
+   private static class GetDictsInfoTask extends AsyncTask<Void, String, ArrayList<DictInfo>>
+   {
+      private ArrayList<DictInfo> alDictInfos = null;
+
+      private Callback callback;
+
+      public interface Callback
+      {
+         void onError(Exception e);
+
+         void onFinish(ArrayList<DictInfo> alDictsInfo);
+      }
+
+      GetDictsInfoTask(Callback callback)
+      {
+         this.callback = callback;
+      }
+
+      @Override
+      protected ArrayList<DictInfo> doInBackground(Void... voids)
+      {
+         InputStream inputStream = null;
+         try
+         {
+            URLConnection connection = new URL(URL_DICTS_LIST).openConnection();
+            connection.setRequestProperty("Accept-Charset", "UTF-8");
+            inputStream = connection.getInputStream();
+
+            // convert inputstream to string
+            if(inputStream != null)
+            {
+               BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+               String line;
+               StringBuilder result = new StringBuilder();
+               while((line = bufferedReader.readLine()) != null)
+               {
+                  result.append(line);
+               }
+
+               JSONObject joRoot = new JSONObject(result.toString());
+
+               JSONObject joTemp;
+
+               alDictInfos = new ArrayList<>();
+
+               JSONArray jaDicts = joRoot.getJSONArray("dicts");
+               for(int i = 0; i < jaDicts.length(); i++)
+               {
+                  joTemp = jaDicts.getJSONObject(i);
+                  alDictInfos.add(new DictInfo(joTemp));
+               }
+            }
+         }
+         catch(JSONException e)
+         {
+            e.printStackTrace();
+         }
+
+         catch(Exception e)
+         {
+            Log.d("InputStream", e.getLocalizedMessage());
+         }
+         finally
+         {
+            try
+            {
+               if(inputStream != null)
+               {
+                  inputStream.close();
+               }
+            }
+            catch(IOException e)
+            {
+               e.printStackTrace();
+            }
+         }
+
+         return alDictInfos;
+      }
+
+      @Override
+      protected void onPostExecute(ArrayList<DictInfo> alDictsInfo)
+      {
+         callback.onFinish(alDictsInfo);
+      }
+   }
+
 
    class DictionariesAdapter extends RecyclerView.Adapter<DictionariesAdapter.ViewHolder>
    {
@@ -344,8 +493,8 @@ public class Downloader extends AppCompatActivity
       class ViewHolder extends RecyclerView.ViewHolder
       {
          TextView tvTitle;
-//               tvSize;
-         View view;
+         //               tvSize;
+         View     view;
 
          ViewHolder(View itemView)
          {
@@ -390,6 +539,126 @@ public class Downloader extends AppCompatActivity
       }
    }
 
+   class DictsInfoAdapter extends RecyclerView.Adapter<DictsInfoAdapter.ViewHolder>
+   {
+      private String sFilter = "";
+
+      private ArrayList<DictInfo> visibleItems;
+
+      private OnItemClickListener onItemClickListener = null;
+
+      DictsInfoAdapter()
+      {
+         visibleItems = new ArrayList<>();
+         visibleItems.addAll(alDictsInfo);
+      }
+
+      void setOnItemClickListener(OnItemClickListener onItemClickListener)
+      {
+         this.onItemClickListener = onItemClickListener;
+      }
+
+      @NonNull
+      @Override
+      public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType)
+      {
+         View v = LayoutInflater.from(parent.getContext())
+//                                .inflate(R.layout.downloader_list_item, parent, false);
+                                .inflate(android.R.layout.simple_list_item_1, parent, false);
+
+         return new ViewHolder(v);
+      }
+
+      @Override
+      public void onBindViewHolder(@NonNull ViewHolder holder, int position)
+      {
+         DictInfo oDictInfo = visibleItems.get(position);
+
+         String sText = oDictInfo.getName();
+
+         Spannable spContent = new SpannableString(sText);
+         int iFilteredStart = sText.toLowerCase(Locale.getDefault())
+                                   .indexOf(sFilter);
+         int iFilterEnd;
+         if(iFilteredStart < 0)
+         {
+            iFilteredStart = 0;
+            iFilterEnd = 0;
+         }
+         else
+         {
+            iFilterEnd = iFilteredStart + sFilter.length();
+         }
+         spContent.setSpan(new ForegroundColorSpan(ContextCompat.getColor(Downloader.this, R.color.accent)),
+                           iFilteredStart,
+                           iFilterEnd,
+                           Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+         holder.tvTitle.setText(spContent);
+      }
+
+      @Override
+      public int getItemCount()
+      {
+//         return alMetadata.size();
+         return visibleItems.size();
+      }
+
+      public void notifyAdapterDataSetChanged()
+      {
+         visibleItems.clear();
+         visibleItems.addAll(alDictsInfo);
+         notifyDataSetChanged();
+      }
+
+      class ViewHolder extends RecyclerView.ViewHolder
+      {
+         TextView tvTitle;
+         //               tvSize;
+         View     view;
+
+         ViewHolder(View itemView)
+         {
+            super(itemView);
+            tvTitle = itemView.findViewById(android.R.id.text1);
+//            tvTitle = itemView.findViewById(R.id.tv_title);
+//            tvSize = itemView.findViewById(R.id.tv_size);
+            view = itemView;
+            view.setOnClickListener(new View.OnClickListener()
+            {
+               @Override
+               public void onClick(View view)
+               {
+                  onItemClickListener.OnItemClick(view, getLayoutPosition());
+               }
+            });
+         }
+      }
+
+      public void filter(String charText)
+      {
+         sFilter = charText.toLowerCase(Locale.getDefault());
+         visibleItems.clear();
+         if(sFilter.length() == 0)
+         {
+            visibleItems.addAll(alDictsInfo);
+         }
+         else
+         {
+            for(DictInfo dictInfo : alDictsInfo)
+            {
+               if(dictInfo.getName()
+                          .toLowerCase(Locale.getDefault())
+                          .contains(sFilter))
+               {
+                  visibleItems.add(dictInfo);
+               }
+            }
+         }
+         notifyDataSetChanged();
+      }
+   }
+
+
    interface OnItemClickListener
    {
       void OnItemClick(View view, int pos);
@@ -397,25 +666,35 @@ public class Downloader extends AppCompatActivity
 
    void view(int position)
    {
-      if(position < alMetadata.size())
+//      if(position < alMetadata.size())
+//      {
+//         Metadata metadata = alMetadata.get(position);
+//         Intent i = new Intent(this, DownloadService.class);
+//         i.putExtra(DownloadService.XTR_ACTION, DownloadService.ACT_VIEW);
+//         i.putExtra(DownloadService.XTR_NAME, metadata.getName());
+////         i.putExtra(DownloadService.XTR_FILE, metadata.getPathLower());
+//         i.putExtra(DownloadService.XTR_FILE, metadata.getPathDisplay());
+//
+//         if(metadata instanceof FileMetadata)
+//         {
+//            i.putExtra(DownloadService.XTR_SIZE, ((FileMetadata) metadata).getSize());
+//            i.putExtra(DownloadService.XTR_ID,
+//                       ((FileMetadata) metadata).getId()
+//                                                .hashCode());
+//            i.putExtra(DownloadService.XTR_DATE,
+//                       ((FileMetadata) metadata).getClientModified()
+//                                                .getTime());
+//         }
+//         startService(i);
+//      }
+
+      if(position < alDictsInfo.size())
       {
-         Metadata metadata = alMetadata.get(position);
+         DictInfo dictInfo = alDictsInfo.get(position);
+
          Intent i = new Intent(this, DownloadService.class);
          i.putExtra(DownloadService.XTR_ACTION, DownloadService.ACT_VIEW);
-         i.putExtra(DownloadService.XTR_NAME, metadata.getName());
-//         i.putExtra(DownloadService.XTR_FILE, metadata.getPathLower());
-         i.putExtra(DownloadService.XTR_FILE, metadata.getPathDisplay());
-
-         if(metadata instanceof FileMetadata)
-         {
-            i.putExtra(DownloadService.XTR_SIZE, ((FileMetadata) metadata).getSize());
-            i.putExtra(DownloadService.XTR_ID,
-                       ((FileMetadata) metadata).getId()
-                                                .hashCode());
-            i.putExtra(DownloadService.XTR_DATE,
-                       ((FileMetadata) metadata).getClientModified()
-                                                .getTime());
-         }
+         i.putExtra(DownloadService.XTR_DICT_INFO, dictInfo);
          startService(i);
       }
    }
@@ -441,7 +720,9 @@ public class Downloader extends AppCompatActivity
          @Override
          public boolean onQueryTextChange(String newText)
          {
-            adDictionaries.filter(newText);
+//            adDictionaries.filter(newText);
+            adDictsInfo.filter(newText);
+
             return true;
          }
       });
@@ -452,5 +733,6 @@ public class Downloader extends AppCompatActivity
 
       return true;
    }
+
 }
 

@@ -43,4 +43,8 @@
     <string name="size">Size</string>
     <string name="format_size">%,d KB</string>
     <string name="format_date">%1$02d/%2$02d/%3$d %4$d:%5$02d</string>
+    <string name="info">Info</string>
+    <string name="words">Words</string>
+    <string name="sample_words">100000</string>
+    <string name="sample_info">Info</string>
 </resources>

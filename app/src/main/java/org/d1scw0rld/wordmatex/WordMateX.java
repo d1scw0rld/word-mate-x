@@ -29,6 +29,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.widget.Button;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.ViewSwitcher;
 
@@ -81,6 +82,8 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
          definitionView,
          tvTitle;
 
+   private ScrollView scroll;
+
    private Button downloaderButton;
 
    private Toolbar toolbar;
@@ -107,6 +110,7 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
       messageView = findViewById(R.id.messageView);
       textView = findViewById(R.id.textView);
       wordView = findViewById(R.id.wordView);
+      scroll = findViewById(R.id.scroll);
       definitionView = findViewById(R.id.definitionView);
       tvTitle = findViewById(R.id.tv_title);
 
@@ -668,6 +672,7 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
          {
             wordView.setText(dicts[currentDict].getWord(index));
             definitionView.setText(Html.fromHtml(dicts[currentDict].getDefinition(index)));
+            scroll.scrollTo(0,0);
          }
          catch(IOException e)
          {
