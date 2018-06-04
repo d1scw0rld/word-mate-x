@@ -126,12 +126,15 @@ public class DownloadService extends Service
 
       Task t;
       DictInfo dictInfo;
+      int id = 0;
 
-      int id = intent.getIntExtra(XTR_ID, 0);
+//      int id = intent.getIntExtra(XTR_ID, 0);
       switch(intent.getIntExtra(XTR_ACTION, 0))
       {
          case ACT_DOWNLOAD /* 1 */:
-            if(tasks.get(valueOf(id)) == null)
+            dictInfo = intent.getParcelableExtra(XTR_DICT_INFO);
+            id = dictInfo.getId();
+            if(tasks.get(valueOf(dictInfo.getId())) == null)
             {
 //               t = new Task();
 //               t.id = id;
@@ -143,7 +146,6 @@ public class DownloadService extends Service
 //               Log.i(TAG, "Task add " + t.name);
 //               showToast(getString(R.string.download) + ": " + t.name);
 
-               dictInfo = intent.getParcelableExtra(XTR_DICT_INFO);
                tmDictsInfo.put(dictInfo.getId(), dictInfo);
                Log.i(TAG, "Task add " + dictInfo.getName());
                showToast(getString(R.string.download) + ": " + dictInfo.getName());
@@ -159,6 +161,7 @@ public class DownloadService extends Service
             break;
 
          case ACT_CANCEL /* 2 */:
+            id = intent.getIntExtra(XTR_ID, 0);
             t = tasks.get(valueOf(id));
             if(t != null)
             {
@@ -188,16 +191,19 @@ public class DownloadService extends Service
 ////            dialog.show();
 //            AlertDialog dialog = alert.create();
 //            dialog.show();
+            dictInfo = intent.getParcelableExtra(XTR_DICT_INFO);
+            id = dictInfo.getId();
 
             Intent i = new Intent(this, DownloadViewer.class);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            i.putExtra(XTR_DICT_INFO, intent.getParcelableExtra(XTR_DICT_INFO));
+            i.putExtra(XTR_DICT_INFO, dictInfo);
+//            i.putExtra(XTR_DICT_INFO, intent.getParcelableExtra(XTR_DICT_INFO));
 //            i.putExtra(XTR_ID, id);
 //            i.putExtra(XTR_SIZE, intent.getLongExtra(XTR_SIZE, 0));
 //            i.putExtra(XTR_NAME, intent.getStringExtra(XTR_NAME));
 //            i.putExtra(XTR_DATE, intent.getLongExtra(XTR_DATE, -1));
 //            i.putExtra(XTR_FILE, intent.getStringExtra(XTR_FILE));
-            if(tasks.get(id) != null)
+            if(tasks.get(dictInfo.getId()) != null)
             {
                i.putExtra(XTR_IS_DOWNLOADING, true);
             }
@@ -416,20 +422,16 @@ public class DownloadService extends Service
       }
 
       @Override
-      protected void onProgressUpdate(Integer... values)
+      protected void onPreExecute()
       {
-         oNotificationBuilder.setProgress(100, values[0], false);
+         super.onPreExecute();
 
-         notification = oNotificationBuilder.build();
-
-         nm.notify(task.getId(), notification);
+         downloadStarted();
       }
 
       @Override
       protected Void doInBackground(Void... voids)
       {
-         downloadStarted();
-
          File path = new File(WordMateX.FILES_PATH);
 
          File file = new File(path, task.getFile());
@@ -508,7 +510,6 @@ public class DownloadService extends Service
                if(progress != progressNew)
                {
                   progress = progressNew;
-                  onProgressUpdate();
                   publishProgress(progress);
                }
             }
@@ -675,11 +676,28 @@ public class DownloadService extends Service
          return null;
       }
 
+      @Override
+      protected void onProgressUpdate(Integer... values)
+      {
+         oNotificationBuilder.setProgress(100, values[0], false);
+
+         notification = oNotificationBuilder.build();
+
+         nm.notify(task.getId(), notification);
+      }
+
+      @Override
+      protected void onPostExecute(Void aVoid)
+      {
+         super.onPostExecute(aVoid);
+      }
+
       private void downloadStarted()
       {
          intent = new Intent(DownloadService.this, DownloadService.class);
          intent.putExtra(XTR_ACTION, DownloadService.ACT_VIEW);
-         intent.putExtra(XTR_ID, task.getId());
+//         intent.putExtra(XTR_ID, task.getId());
+         intent.putExtra(XTR_DICT_INFO, (DictInfo) task);
          intent.setAction(Long.toString(System.currentTimeMillis()));
          PendingIntent pi = PendingIntent.getService(DownloadService.this,
                                                      0,
