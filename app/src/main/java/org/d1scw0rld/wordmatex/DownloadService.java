@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Enumeration;
@@ -448,78 +449,82 @@ public class DownloadService extends Service
             throw new IllegalStateException("Download path is not a directory: " + path);
          }
 
-         OutputStream outputStream = null;
-         InputStream inputStream = null;
-         try
-         {
+//
+//         OutputStream outputStream = null;
+//         InputStream inputStream = null;
+//         try
+//         {
+//            URL url = new URL(task.getUrl());
+//            URLConnection connection = url.openConnection();
+//
+//            inputStream = new BufferedInputStream(url.openStream(), 8192);
+//
 //            outputStream = new FileOutputStream(file);
-
-//            dbxClient.files()
-//                     .download(task.file)
-//                     //                      .download(metadata.getPathLower(), metadata.getRev())
-//                     .download(outputStream);
-
-            URL url = new URL(task.getUrl());
-            URLConnection connection = url.openConnection();
-
-            inputStream = new BufferedInputStream(url.openStream(), 8192);
-
-            outputStream = new FileOutputStream(file);
-//               outputStream.write(bufferedReader.read());
-
-            int lengthOfFile = connection.getContentLength();
-
-//            List values = connection.getHeaderFields().get("content-Length");
-//            if (values != null && !values.isEmpty())
+////               outputStream.write(bufferedReader.read());
+//
+//            int lengthOfFile = connection.getContentLength();
+//
+////            List values = connection.getHeaderFields().get("content-Length");
+////            if (values != null && !values.isEmpty())
+////            {
+////
+////               // getHeaderFields() returns a Map with key=(String) header
+////               // name, value = List of String values for that header field.
+////               // just use the first value here.
+////               String sLength = (String) values.get(0);
+////
+////               if(sLength != null)
+////               {
+////                  lengthOfFile = Integer.valueOf(sLength);
+////               }
+////            }
+//
+//            byte data[] = new byte[1024];
+//
+//            long total = 0;
+//
+//            int count,
+//                  progress = 0, progressNew = 0;
+//
+//            while((count = inputStream.read(data)) != -1)
 //            {
+//               total += count;
+//               // writing data to file
+//               outputStream.write(data, 0, count);
 //
-//               // getHeaderFields() returns a Map with key=(String) header
-//               // name, value = List of String values for that header field.
-//               // just use the first value here.
-//               String sLength = (String) values.get(0);
-//
-//               if(sLength != null)
+//               if(lengthOfFile < 0)
 //               {
-//                  lengthOfFile = Integer.valueOf(sLength);
+//                  continue;
+//               }
+//
+//               // publishing the progress....
+//               // After this onProgressUpdate will be called
+//               progressNew = (int) (total * 100) / lengthOfFile;
+//               if(progress != progressNew)
+//               {
+//                  progress = progressNew;
+//                  publishProgress(progress);
 //               }
 //            }
+//
+//            // Tell android about the file
+//            intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+//            intent.setData(Uri.fromFile(file));
+//            DownloadService.this.sendBroadcast(intent);
+         try
+         {
+            download(file);
+         }
+         catch(IOException e)
+         {
+            e.printStackTrace();
 
-            byte data[] = new byte[1024];
-
-            long total = 0;
-
-            int count,
-                  progress = 0, progressNew = 0;
-
-            while((count = inputStream.read(data)) != -1)
-            {
-               total += count;
-               // writing data to file
-               outputStream.write(data, 0, count);
-
-               if(lengthOfFile < 0)
-               {
-                  continue;
-               }
-               progressNew = (int) (total * 100) / lengthOfFile;
-
-               // publishing the progress....
-               // After this onProgressUpdate will be called
-//                  publishProgress("" + (int) ((total * 100) / lenghtOfFile));
-
-               if(progress != progressNew)
-               {
-                  progress = progressNew;
-                  publishProgress(progress);
-               }
-            }
-
-            // Tell android about the file
-            intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-            intent.setData(Uri.fromFile(file));
-            DownloadService.this.sendBroadcast(intent);
-
+         }
+         finally
+         {
             downloadDone();
+         }
+
 
 //            if(file.getName()
 //                   .toLowerCase()
@@ -538,140 +543,162 @@ public class DownloadService extends Service
                    .toLowerCase()
                    .endsWith(".zip"))
             {
+
                unzipStarted();
 
-               LinkedList<File> files = new LinkedList<>();
-               ZipFile zipFile = new ZipFile(file);
-               File dir = new File(WordMateX.FILES_PATH + file.getName()
-                                                              .substring(0,
-                                                                         file.getName()
-                                                                             .indexOf(".zip")));
-               if(!dir.exists())
+               try
                {
-                  dir.mkdirs();
+                  unzip(file, WordMateX.FILES_PATH + file.getName()
+                                                         .substring(0,
+                                                                    file.getName()
+                                                                        .indexOf(".zip")));
+               }
+               catch(Exception e)
+               {
+                  e.printStackTrace();
+               }
+               finally
+               {
+                  file.delete();
                }
 
-               Enumeration<? extends ZipEntry> entries = zipFile.entries();
-               File entryFile;
-               while(entries.hasMoreElements())
-               {
-                  ZipEntry zipEntry = entries.nextElement();
-                  if(!zipEntry.isDirectory())
-                  {
-                     entryFile = new File(dir, zipEntry.getName());
-                     int size = (int) zipEntry.getSize();
-                     unzipEntryStart(zipEntry.getName());
 
-                     inputStream = new BufferedInputStream(zipFile.getInputStream(zipEntry), BUFFER_SIZE);
-                     File tmpFile = File.createTempFile(entryFile.getName(), null, dir);
-                     outputStream = new BufferedOutputStream(new FileOutputStream(tmpFile), BUFFER_SIZE);
-                     int interval = size / 100;
-                     if(interval < 1)
-                     {
-                        interval = 1;
-                     }
-                     int percent = 0;
-                     int p = 0;
-                     int to = 0;
-                     while(p < size)
-                     {
-                        to += interval;
-                        if(to > size)
-                        {
-                           to = size;
-                        }
-                        while(p < to)
-                        {
-                           outputStream.write(inputStream.read());
-                           p += 1;
-                        }
-                        if(task.stop)
-                        {
-                           inputStream.close();
-                           outputStream.close();
-                           zipFile.close();
-                           tmpFile.delete();
-                           return null;
-                        }
-                        else if(percent != 100)
-                        {
-                           percent += 1;
-                           publishProgress(percent);
-                        }
-                     }
-                     inputStream.close();
-                     outputStream.close();
-                     files.add(entryFile);
-                     files.add(tmpFile);
-                  }
-               }
-               zipFile.close();
-               file.delete();
+//               LinkedList<File> files = new LinkedList<>();
+//               ZipFile zipFile = new ZipFile(file);
+//               File dir = new File(WordMateX.FILES_PATH + file.getName()
+//                                                              .substring(0,
+//                                                                         file.getName()
+//                                                                             .indexOf(".zip")));
+//               if(!dir.exists())
+//               {
+//                  if(!dir.mkdirs())
+//                  {
+//                     throw new RuntimeException("Unable to create directory: " + path);
+//                  }
+//               }
+//
+//               Enumeration<? extends ZipEntry> entries = zipFile.entries();
+//               File entryFile;
+//               while(entries.hasMoreElements())
+//               {
+//                  ZipEntry zipEntry = entries.nextElement();
+//                  if(!zipEntry.isDirectory())
+//                  {
+//                     entryFile = new File(dir, zipEntry.getName());
+//                     unzipEntryStart(zipEntry.getName());
+//
+//                     inputStream = new BufferedInputStream(zipFile.getInputStream(zipEntry), BUFFER_SIZE);
+//                     File tmpFile = File.createTempFile(entryFile.getName(), null, dir);
+//                     outputStream = new BufferedOutputStream(new FileOutputStream(tmpFile), BUFFER_SIZE);
+//
+//                     int size = (int) zipEntry.getSize();
+//                     int interval = size / 100;
+//                     if(interval < 1)
+//                     {
+//                        interval = 1;
+//                     }
+//                     int percent = 0;
+//                     int p = 0;
+//                     int to = 0;
+//                     while(p < size)
+//                     {
+//                        to += interval;
+//                        if(to > size)
+//                        {
+//                           to = size;
+//                        }
+//                        while(p < to)
+//                        {
+//                           outputStream.write(inputStream.read());
+//                           p += 1;
+//                        }
+//                        if(task.stop)
+//                        {
+//                           inputStream.close();
+//                           outputStream.close();
+//                           zipFile.close();
+//                           tmpFile.delete();
+//                           return null;
+//                        }
+//                        else if(percent != 100)
+//                        {
+//                           percent += 1;
+//                           publishProgress(percent);
+//                        }
+//                     }
+//                     inputStream.close();
+//                     outputStream.close();
+//                     files.add(entryFile);
+//                     files.add(tmpFile);
+//                  }
+//               }
+//               zipFile.close();
+//               file.delete();
 
-               Iterator<File> it = files.iterator();
-               while(it.hasNext())
-               {
-                  File f = it.next();
-                  if(f.exists())
-                  {
-                     f.delete();
-                  }
-                  it.next()
-                    .renameTo(f);
-               }
+//               Iterator<File> it = files.iterator();
+//               while(it.hasNext())
+//               {
+//                  File f = it.next();
+//                  if(f.exists())
+//                  {
+//                     f.delete();
+//                  }
+//                  it.next()
+//                    .renameTo(f);
+//               }
             }
 
 
             nm.cancel(task.getId());
             nm.notify(task.getId(), notification);
             handler.sendEmptyMessage(task.getId());
-         }
+//         }
 
 //         catch(DbxException |
 //      IOException e)
 
-         catch(IOException e)
-         {
-            e.printStackTrace();
-
-            if(!task.stop)
-            {
-
-
-               downloadFailed(e.getMessage());
-
-               handler.sendEmptyMessage(task.getId());
-            }
-         }
-         catch(Exception e)
-         {
-            e.printStackTrace();
-         }
-         finally
-         {
-            if(inputStream != null)
-            {
-               try
-               {
-                  inputStream.close();
-               }
-               catch(IOException e)
-               {
-                  e.printStackTrace();
-               }
-            }
-            if(outputStream != null)
-            {
-               try
-               {
-                  outputStream.close();
-               }
-               catch(IOException e)
-               {
-                  e.printStackTrace();
-               }
-            }
-         }
+//         catch(IOException e)
+//         {
+//            e.printStackTrace();
+//
+//            if(!task.stop)
+//            {
+//
+//
+//               downloadFailed(e.getMessage());
+//
+//               handler.sendEmptyMessage(task.getId());
+//            }
+//         }
+//         catch(Exception e)
+//         {
+//            e.printStackTrace();
+//         }
+//         finally
+//         {
+//            if(inputStream != null)
+//            {
+//               try
+//               {
+//                  inputStream.close();
+//               }
+//               catch(IOException e)
+//               {
+//                  e.printStackTrace();
+//               }
+//            }
+//            if(outputStream != null)
+//            {
+//               try
+//               {
+//                  outputStream.close();
+//               }
+//               catch(IOException e)
+//               {
+//                  e.printStackTrace();
+//               }
+//            }
+//         }
 
          return null;
       }
@@ -781,78 +808,268 @@ public class DownloadService extends Service
 //         nm.notify(task.getId(), notification);
 //      }
 
+
+      private void download(File file) throws IOException
+      {
+
+         OutputStream outputStream = null;
+         InputStream inputStream = null;
+         File tmpFile = null;
+
+         try
+         {
+            URL url = new URL(task.getUrl());
+
+            URLConnection connection = url.openConnection();
+
+            inputStream = new BufferedInputStream(url.openStream(), 8192);
+
+//            outputStream = new FileOutputStream(file);
+
+            tmpFile = File.createTempFile(file.getName(), null, file.getParentFile());
+            outputStream = new BufferedOutputStream(new FileOutputStream(tmpFile), BUFFER_SIZE);
+
+            int lengthOfFile = connection.getContentLength();
+
+
+            byte data[] = new byte[1024];
+
+            long total = 0;
+
+            int count,
+                  progress = 0, progressNew = 0;
+
+            while((count = inputStream.read(data)) != -1)
+            {
+               total += count;
+               // writing data to file
+               outputStream.write(data, 0, count);
+
+               if(task.stop)
+               {
+                  inputStream.close();
+                  outputStream.close();
+                  tmpFile.delete();
+                  return;
+               }
+
+               if(lengthOfFile < 0)
+               {
+                  continue;
+               }
+
+               // publishing the progress....
+               // After this onProgressUpdate will be called
+               progressNew = (int) (total * 100) / lengthOfFile;
+               if(progress != progressNew)
+               {
+                  progress = progressNew;
+                  publishProgress(progress);
+               }
+            }
+
+            if(file.exists())
+            {
+               file.delete();
+            }
+            tmpFile.renameTo(file);
+
+            // Tell android about the file
+            intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            intent.setData(Uri.fromFile(file));
+            DownloadService.this.sendBroadcast(intent);
+         }
+         finally
+         {
+            if(inputStream != null)
+            {
+               try
+               {
+                  inputStream.close();
+               }
+               catch(IOException e)
+               {
+                  e.printStackTrace();
+               }
+            }
+            if(outputStream != null)
+            {
+               try
+               {
+                  outputStream.close();
+               }
+               catch(IOException e)
+               {
+                  e.printStackTrace();
+               }
+            }
+            if(tmpFile != null)
+               tmpFile.delete();
+
+         }
+      }
+
       private void unzip(String zipFilePath, String unzipAtLocation) throws Exception
       {
 
          File archive = new File(zipFilePath);
 
+         unzip(archive, unzipAtLocation);
+
+////         try
+////         {
+//
+//            ZipFile zipfile = new ZipFile(archive);
+//
+//            for(Enumeration e = zipfile.entries(); e.hasMoreElements(); )
+//            {
+//
+//               ZipEntry entry = (ZipEntry) e.nextElement();
+//
+//               unzipEntry(zipfile, entry, unzipAtLocation);
+//            }
+//
+////         }
+////         catch(Exception e)
+////         {
+////
+////            Log.e("Unzip zip", "Unzip exception", e);
+////         }
+      }
+
+      private void unzip(File archive, String unzipAtLocation) throws Exception
+      {
+         ZipFile zipFile = new ZipFile(archive);
+
+//         unzipStarted();
+         LinkedList<File> files = new LinkedList<>();
+
          try
          {
-
-            ZipFile zipfile = new ZipFile(archive);
-
-            for(Enumeration e = zipfile.entries(); e.hasMoreElements(); )
+            for(Enumeration e = zipFile.entries(); e.hasMoreElements(); )
             {
 
                ZipEntry entry = (ZipEntry) e.nextElement();
 
-               unzipEntry(zipfile, entry, unzipAtLocation);
+               unzipEntryStart(entry.getName());
+
+               unzipEntry(zipFile, entry, unzipAtLocation, files);
             }
 
+            Iterator<File> it = files.iterator();
+            while(it.hasNext())
+            {
+               File f = it.next();
+               if(f.exists())
+               {
+                  f.delete();
+               }
+               it.next()
+                 .renameTo(f);
+            }
          }
-         catch(Exception e)
+         finally
          {
+            zipFile.close();
 
-            Log.e("Unzip zip", "Unzip exception", e);
          }
+//         catch(Exception e)
+//         {
+//
+//            Log.e("Unzip zip", "Unzip exception", e);
+//         }
       }
 
-      private void unzipEntry(ZipFile zipfile, ZipEntry entry, String outputDir) throws IOException
+
+      private void unzipEntry(ZipFile zipFile, ZipEntry zipEntry, String outputDir, LinkedList<File> files) throws IOException
       {
 
-         if(entry.isDirectory())
+         unzipEntryStart(zipEntry.getName());
+         BufferedOutputStream outputStream = null;
+
+         if(zipEntry.isDirectory())
          {
-            createDir(new File(outputDir, entry.getName()));
+            createDir(new File(outputDir, zipEntry.getName()));
             return;
          }
 
-         File outputFile = new File(outputDir, entry.getName());
+         File outputFile = new File(outputDir, zipEntry.getName());
          if(!outputFile.getParentFile()
                        .exists())
          {
             createDir(outputFile.getParentFile());
          }
 
-         Log.v("ZIP E", "Extracting: " + entry);
+         Log.v(TAG, "Extracting: " + zipEntry);
 
-         InputStream zin = zipfile.getInputStream(entry);
-         BufferedInputStream inputStream = new BufferedInputStream(zin);
-         BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
-
+//         InputStream zin = zipFile.getInputStream(zipEntry);
+//         BufferedInputStream inputStream = new BufferedInputStream(zin);
+         InputStream inputStream = new BufferedInputStream(zipFile.getInputStream(zipEntry), BUFFER_SIZE);
          try
          {
+            File tmpFile = File.createTempFile(outputFile.getName(), null, outputFile.getParentFile());
+//         BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
+            outputStream = new BufferedOutputStream(new FileOutputStream(tmpFile), BUFFER_SIZE);
 
             //IOUtils.copy(inputStream, outputStream);
 
             try
             {
 
-               for(int c = inputStream.read(); c != -1; c = inputStream.read())
+//               for(int c = inputStream.read(); c != -1; c = inputStream.read())
+//               {
+//                  outputStream.write(c);
+//               }
+
+               int size = (int) zipEntry.getSize();
+               int interval = size / 100;
+               if(interval < 1)
                {
-                  outputStream.write(c);
+                  interval = 1;
                }
+               int percent = 0;
+               int p = 0;
+               int to = 0;
+               while(p < size)
+               {
+                  to += interval;
+                  if(to > size)
+                  {
+                     to = size;
+                  }
+                  while(p < to)
+                  {
+                     outputStream.write(inputStream.read());
+                     p += 1;
+                  }
+                  if(task.stop)
+                  {
+                     inputStream.close();
+                     outputStream.close();
+                     zipFile.close();
+                     tmpFile.delete();
+                     return;
+                  }
+                  else if(percent != 100)
+                  {
+                     percent += 1;
+                     publishProgress(percent);
+                  }
+               }
+               files.add(outputFile);
+               files.add(tmpFile);
 
             }
             finally
             {
-
                outputStream.close();
             }
 
          }
          finally
          {
-            outputStream.close();
+            if(outputStream != null)
+               outputStream.close();
             inputStream.close();
          }
       }
