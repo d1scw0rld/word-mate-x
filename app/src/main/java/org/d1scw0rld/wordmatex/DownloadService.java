@@ -14,10 +14,6 @@ import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.dropbox.core.DbxRequestConfig;
-import com.dropbox.core.http.OkHttp3Requestor;
-import com.dropbox.core.v2.DbxClientV2;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -26,13 +22,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.TreeMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -47,14 +41,10 @@ public class DownloadService extends Service
 
    final static int BUFFER_SIZE = 65536;
 
-   final static String XTR_NAME = "name",
-         XTR_DATE               = "date",
-         XTR_SIZE               = "size",
-         XTR_ID                 = "id",
-         XTR_ACTION             = "action",
-         XTR_FILE               = "file",
-         XTR_IS_DOWNLOADING     = "is_downloading",
-         XTR_DICT_INFO          = "dict_info";
+   final static String XTR_ID = "id",
+         XTR_ACTION           = "action",
+         XTR_IS_DOWNLOADING   = "is_downloading",
+         XTR_DICT_INFO        = "dict_info";
 
    final static String TAG = "DOWNLOAD_SERVICE";
 
@@ -64,10 +54,6 @@ public class DownloadService extends Service
    private NotificationManager nm;
 
    private TreeMap<Integer, Task> tasks;
-
-   private TreeMap<Integer, DictInfo> tmDictsInfo;
-
-   private DbxClientV2 dbxClient;
 
    static class IncomingHandler extends Handler
    {
@@ -92,6 +78,8 @@ public class DownloadService extends Service
 
    IncomingHandler handler;
 
+//   Runner.Callback callback;
+
 //   Handler handler = new Handler()
 //   {
 //
@@ -106,14 +94,9 @@ public class DownloadService extends Service
    {
       Log.i(TAG, "Service created");
       tasks = new TreeMap<>();
-      tmDictsInfo = new TreeMap<>();
       nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-      DbxRequestConfig requestConfig = DbxRequestConfig.newBuilder("word-mate-x")
-                                                       .withHttpRequestor(new OkHttp3Requestor(OkHttp3Requestor.defaultOkHttpClient()))
-                                                       .build();
-      dbxClient = new DbxClientV2(requestConfig, Downloader.ACCESS_TOKEN);
-
       handler = new IncomingHandler(this);
+//      callback = ;
    }
 
    public IBinder onBind(Intent intent)
@@ -137,27 +120,138 @@ public class DownloadService extends Service
             id = dictInfo.getId();
             if(tasks.get(valueOf(dictInfo.getId())) == null)
             {
-//               t = new Task();
-//               t.id = id;
-//               t.size = intent.getLongExtra(XTR_SIZE, 0);
-//               t.name = intent.getStringExtra(XTR_NAME);
-//               t.file = intent.getStringExtra(XTR_FILE);
-//               t.date = new Date(intent.getLongExtra(XTR_DATE, -1));
-//               tasks.put(id, t);
-//               Log.i(TAG, "Task add " + t.name);
-//               showToast(getString(R.string.download) + ": " + t.name);
-
-               tmDictsInfo.put(dictInfo.getId(), dictInfo);
-               Log.i(TAG, "Task add " + dictInfo.getName());
-               showToast(getString(R.string.download) + ": " + dictInfo.getName());
-
                t = new Task(dictInfo);
                tasks.put(t.getId(), t);
                Log.i(TAG, "Task add " + t.getName());
                showToast(getString(R.string.download) + ": " + t.getName());
 
 //               new RunnerNew(t).start();
-               new Runner(t).execute();
+               new Runner(t, new Runner.Callback()
+               {
+                  private Intent intent;
+                  private Notification notification;
+                  private NotificationCompat.Builder oNotificationBuilder = new NotificationCompat.Builder(DownloadService.this, NTF_CHN);
+
+                  @Override
+                  public void onDownloadStart(Task task)
+                  {
+                     intent = new Intent(DownloadService.this, DownloadService.class);
+                     intent.putExtra(XTR_ACTION, DownloadService.ACT_VIEW);
+//         intent.putExtra(XTR_ID, task.getId());
+                     intent.putExtra(XTR_DICT_INFO, (DictInfo) task);
+                     intent.setAction(Long.toString(System.currentTimeMillis()));
+                     PendingIntent pi = PendingIntent.getService(DownloadService.this,
+                                                                 0,
+                                                                 intent,
+                                                                 0);
+
+
+                     String title = getString(R.string.download) + ": " + task.getName();
+
+
+                     oNotificationBuilder.setContentTitle(title)
+                                         .setContentIntent(pi)
+                                         .setSmallIcon(android.R.drawable.stat_sys_download)
+                                         .setTicker(task.getName())
+                                         .setWhen(System.currentTimeMillis());
+
+                     notification = oNotificationBuilder.build();
+                     notification.flags = Notification.FLAG_ONGOING_EVENT;
+
+                     nm.notify(task.getId(), notification);
+                  }
+
+                  @Override
+                  public void onProgress(int id, int progress)
+                  {
+                     oNotificationBuilder.setProgress(100, progress, false);
+
+                     notification = oNotificationBuilder.build();
+
+                     nm.notify(id, notification);
+                  }
+
+                  @Override
+                  public void onDownloadDone(int id, File file)
+                  {
+                     oNotificationBuilder.setContentText(getString(android.R.string.ok))
+                                         .setContentIntent(null)
+                                         .setProgress(0, 0, false)
+                                         .setSmallIcon(android.R.drawable.stat_sys_download_done);
+
+                     notification = oNotificationBuilder.build();
+                     notification.flags = Notification.FLAG_AUTO_CANCEL;
+
+//            nm.notify(id, notification);
+//            nm.cancel(id);
+                     nm.notify(id, notification);
+//
+//            handler.sendEmptyMessage(id);
+
+                     // Tell android about the file
+                     intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+                     intent.setData(Uri.fromFile(file));
+                     sendBroadcast(intent);
+                  }
+
+                  @Override
+                  public void onDownloadFailed(int id, String sError)
+                  {
+                     oNotificationBuilder.setContentText(sError);
+                     notification = oNotificationBuilder.build();
+                     notification.flags = Notification.FLAG_AUTO_CANCEL;
+
+                     nm.cancel(id);
+                     nm.notify(id, notification);
+                  }
+
+                  @Override
+                  public void onUnzipStart(Task task)
+                  {
+                     oNotificationBuilder.setContentTitle(getString(R.string.extract) + ": " + task.getName())
+                                         .setContentText(null)
+                                         .setSmallIcon(android.R.drawable.stat_sys_download);
+
+                     notification = oNotificationBuilder.build();
+
+                     nm.notify(task.getId(), notification);
+                  }
+
+                  @Override
+                  public void onUnzipEntryStart(int id, String sEntry)
+                  {
+                     oNotificationBuilder.setContentText(sEntry);
+
+                     notification = oNotificationBuilder.build();
+
+                     nm.notify(id, notification);
+                  }
+
+                  @Override
+                  public void onUnzipFailed(int id, String sError)
+                  {
+                     oNotificationBuilder.setContentText(sError);
+                     notification = oNotificationBuilder.build();
+                     notification.flags = Notification.FLAG_AUTO_CANCEL;
+
+                     nm.cancel(id);
+                     nm.notify(id, notification);
+                  }
+
+                  @Override
+                  public void onUnzipDone()
+                  {
+
+                  }
+
+                  @Override
+                  public void onFinished(int id)
+                  {
+//            nm.notify(id, notification);
+                     nm.cancel(id);
+                     handler.sendEmptyMessage(id);
+                  }
+               }).execute();
             }
             break;
 
@@ -178,32 +272,12 @@ public class DownloadService extends Service
             break;
 
          case ACT_VIEW /* 3 */:
-
-////            View alertLayout = getLayoutInflater().inflate(R.layout.download_viewer, null);
-//            View alertLayout = ((LayoutInflater)getSystemService(Context.LAYOUT_INFLATER_SERVICE)).inflate(R.layout.download_viewer, null);
-//
-////            AlertDialog.Builder alert = new AlertDialog.Builder(this);
-//            AlertDialog.Builder alert = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.AppTheme));
-//            alert.setTitle("Info");
-//            // this is set the view from XML inside AlertDialog
-////            alert.setView(alertLayout);
-//            // disallow cancel of AlertDialog on click of back button and outside touch
-//            alert.setCancelable(false);
-////            dialog.show();
-//            AlertDialog dialog = alert.create();
-//            dialog.show();
             dictInfo = intent.getParcelableExtra(XTR_DICT_INFO);
             id = dictInfo.getId();
 
             Intent i = new Intent(this, DownloadViewer.class);
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             i.putExtra(XTR_DICT_INFO, dictInfo);
-//            i.putExtra(XTR_DICT_INFO, intent.getParcelableExtra(XTR_DICT_INFO));
-//            i.putExtra(XTR_ID, id);
-//            i.putExtra(XTR_SIZE, intent.getLongExtra(XTR_SIZE, 0));
-//            i.putExtra(XTR_NAME, intent.getStringExtra(XTR_NAME));
-//            i.putExtra(XTR_DATE, intent.getLongExtra(XTR_DATE, -1));
-//            i.putExtra(XTR_FILE, intent.getStringExtra(XTR_FILE));
             if(tasks.get(dictInfo.getId()) != null)
             {
                i.putExtra(XTR_IS_DOWNLOADING, true);
@@ -221,15 +295,7 @@ public class DownloadService extends Service
          oNotificationBuilder.setSmallIcon(R.drawable.icon);
          Notification notification = oNotificationBuilder.build();
 
-//         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-//         {
-//            notification = oNotificationBuilder.build();
-//         }
-//         else
-//            notification = oNotificationBuilder.getNotification();
-
          startForeground(id, notification);
-
       }
       else
       {
@@ -241,7 +307,6 @@ public class DownloadService extends Service
    {
       if(tasks.size() > 0)
       {
-//         Log.i(TAG, "Remove " + id + " " + tasks.get(id).name);
          Log.i(TAG,
                "Remove " + id + " " + tasks.get(id)
                                            .getName());
@@ -260,20 +325,12 @@ public class DownloadService extends Service
    {
       boolean stop;
 
-//      int id;
-//
-//      long size;
-//
-//      String file,
-//            name;
-//
-//      Date date;
-
       Task(DictInfo dictInfo)
       {
          super(dictInfo);
       }
    }
+
 
 //   class RunnerNew extends Thread
 //   {
@@ -403,7 +460,7 @@ public class DownloadService extends Service
 //   }
 //
 
-   class Runner extends AsyncTask<Void, Integer, Void>
+   static class Runner extends AsyncTask<Void, Integer, Void>
    {
       private Task task;
 
@@ -415,11 +472,35 @@ public class DownloadService extends Service
 
       private PendingIntent pi;
 
-      Runner(Task task)
+      private Callback callback;
+
+      interface Callback
+      {
+         void onDownloadStart(Task task);
+
+         void onProgress(int id, int progress);
+
+         void onDownloadDone(int id, File file);
+
+         void onDownloadFailed(int id, String sError);
+
+         void onUnzipStart(Task task);
+
+         void onUnzipEntryStart(int id, String sEntry);
+
+         void onUnzipFailed(int id, String sError);
+
+         void onUnzipDone();
+
+         void onFinished(int id);
+      }
+
+      Runner(Task task, Callback callback)
       {
          this.task = task;
+         this.callback = callback;
 
-         oNotificationBuilder = new NotificationCompat.Builder(DownloadService.this, NTF_CHN);
+//         oNotificationBuilder = new NotificationCompat.Builder(DownloadService.this, NTF_CHN);
       }
 
       @Override
@@ -427,7 +508,8 @@ public class DownloadService extends Service
       {
          super.onPreExecute();
 
-         downloadStarted();
+//         downloadStarted();
+         callback.onDownloadStart(task);
       }
 
       @Override
@@ -449,102 +531,20 @@ public class DownloadService extends Service
             throw new IllegalStateException("Download path is not a directory: " + path);
          }
 
-//
-//         OutputStream outputStream = null;
-//         InputStream inputStream = null;
-//         try
-//         {
-//            URL url = new URL(task.getUrl());
-//            URLConnection connection = url.openConnection();
-//
-//            inputStream = new BufferedInputStream(url.openStream(), 8192);
-//
-//            outputStream = new FileOutputStream(file);
-////               outputStream.write(bufferedReader.read());
-//
-//            int lengthOfFile = connection.getContentLength();
-//
-////            List values = connection.getHeaderFields().get("content-Length");
-////            if (values != null && !values.isEmpty())
-////            {
-////
-////               // getHeaderFields() returns a Map with key=(String) header
-////               // name, value = List of String values for that header field.
-////               // just use the first value here.
-////               String sLength = (String) values.get(0);
-////
-////               if(sLength != null)
-////               {
-////                  lengthOfFile = Integer.valueOf(sLength);
-////               }
-////            }
-//
-//            byte data[] = new byte[1024];
-//
-//            long total = 0;
-//
-//            int count,
-//                  progress = 0, progressNew = 0;
-//
-//            while((count = inputStream.read(data)) != -1)
-//            {
-//               total += count;
-//               // writing data to file
-//               outputStream.write(data, 0, count);
-//
-//               if(lengthOfFile < 0)
-//               {
-//                  continue;
-//               }
-//
-//               // publishing the progress....
-//               // After this onProgressUpdate will be called
-//               progressNew = (int) (total * 100) / lengthOfFile;
-//               if(progress != progressNew)
-//               {
-//                  progress = progressNew;
-//                  publishProgress(progress);
-//               }
-//            }
-//
-//            // Tell android about the file
-//            intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-//            intent.setData(Uri.fromFile(file));
-//            DownloadService.this.sendBroadcast(intent);
          try
          {
             download(file);
-         }
-         catch(IOException e)
-         {
-            e.printStackTrace();
 
-         }
-         finally
-         {
-            downloadDone();
-         }
-
-
-//            if(file.getName()
-//                   .toLowerCase()
-//                   .endsWith(".zip"))
-//            {
-//               unzipStarted();
-//
-//               unzip(task.getFile(),
-//                     WordMateX.FILES_PATH + task.getFile()
-//                                                .substring(0,
-//                                                           task.getFile()
-//                                                               .indexOf(".zip")));
-//            }
+            Log.e(TAG, "Task id: " + task.getId());
+            callback.onDownloadDone(task.getId(), file);
 
             if(file.getName()
                    .toLowerCase()
                    .endsWith(".zip"))
             {
 
-               unzipStarted();
+//            unzipStarted();
+               callback.onUnzipStart(task);
 
                try
                {
@@ -552,153 +552,34 @@ public class DownloadService extends Service
                                                          .substring(0,
                                                                     file.getName()
                                                                         .indexOf(".zip")));
+                  callback.onUnzipDone();
+
                }
                catch(Exception e)
                {
                   e.printStackTrace();
+                  callback.onUnzipFailed(task.getId(), e.getMessage());
                }
                finally
                {
-                  file.delete();
+                  if(!file.delete())
+                  {
+                     throw new RuntimeException("Can not delete file " + file.getName());
+                  }
                }
-
-
-//               LinkedList<File> files = new LinkedList<>();
-//               ZipFile zipFile = new ZipFile(file);
-//               File dir = new File(WordMateX.FILES_PATH + file.getName()
-//                                                              .substring(0,
-//                                                                         file.getName()
-//                                                                             .indexOf(".zip")));
-//               if(!dir.exists())
-//               {
-//                  if(!dir.mkdirs())
-//                  {
-//                     throw new RuntimeException("Unable to create directory: " + path);
-//                  }
-//               }
-//
-//               Enumeration<? extends ZipEntry> entries = zipFile.entries();
-//               File entryFile;
-//               while(entries.hasMoreElements())
-//               {
-//                  ZipEntry zipEntry = entries.nextElement();
-//                  if(!zipEntry.isDirectory())
-//                  {
-//                     entryFile = new File(dir, zipEntry.getName());
-//                     unzipEntryStart(zipEntry.getName());
-//
-//                     inputStream = new BufferedInputStream(zipFile.getInputStream(zipEntry), BUFFER_SIZE);
-//                     File tmpFile = File.createTempFile(entryFile.getName(), null, dir);
-//                     outputStream = new BufferedOutputStream(new FileOutputStream(tmpFile), BUFFER_SIZE);
-//
-//                     int size = (int) zipEntry.getSize();
-//                     int interval = size / 100;
-//                     if(interval < 1)
-//                     {
-//                        interval = 1;
-//                     }
-//                     int percent = 0;
-//                     int p = 0;
-//                     int to = 0;
-//                     while(p < size)
-//                     {
-//                        to += interval;
-//                        if(to > size)
-//                        {
-//                           to = size;
-//                        }
-//                        while(p < to)
-//                        {
-//                           outputStream.write(inputStream.read());
-//                           p += 1;
-//                        }
-//                        if(task.stop)
-//                        {
-//                           inputStream.close();
-//                           outputStream.close();
-//                           zipFile.close();
-//                           tmpFile.delete();
-//                           return null;
-//                        }
-//                        else if(percent != 100)
-//                        {
-//                           percent += 1;
-//                           publishProgress(percent);
-//                        }
-//                     }
-//                     inputStream.close();
-//                     outputStream.close();
-//                     files.add(entryFile);
-//                     files.add(tmpFile);
-//                  }
-//               }
-//               zipFile.close();
-//               file.delete();
-
-//               Iterator<File> it = files.iterator();
-//               while(it.hasNext())
-//               {
-//                  File f = it.next();
-//                  if(f.exists())
-//                  {
-//                     f.delete();
-//                  }
-//                  it.next()
-//                    .renameTo(f);
-//               }
             }
+         }
+         catch(IOException e)
+         {
+            e.printStackTrace();
+//            downloadFailed(e.getMessage());
+            callback.onDownloadFailed(task.getId(), e.getMessage());
+         }
 
 
-            nm.cancel(task.getId());
-            nm.notify(task.getId(), notification);
-            handler.sendEmptyMessage(task.getId());
-//         }
-
-//         catch(DbxException |
-//      IOException e)
-
-//         catch(IOException e)
-//         {
-//            e.printStackTrace();
-//
-//            if(!task.stop)
-//            {
-//
-//
-//               downloadFailed(e.getMessage());
-//
-//               handler.sendEmptyMessage(task.getId());
-//            }
-//         }
-//         catch(Exception e)
-//         {
-//            e.printStackTrace();
-//         }
-//         finally
-//         {
-//            if(inputStream != null)
-//            {
-//               try
-//               {
-//                  inputStream.close();
-//               }
-//               catch(IOException e)
-//               {
-//                  e.printStackTrace();
-//               }
-//            }
-//            if(outputStream != null)
-//            {
-//               try
-//               {
-//                  outputStream.close();
-//               }
-//               catch(IOException e)
-//               {
-//                  e.printStackTrace();
-//               }
-//            }
-//         }
+//         nm.cancel(task.getId());
+//         nm.notify(task.getId(), notification);
+//         handler.sendEmptyMessage(task.getId());
 
          return null;
       }
@@ -706,97 +587,101 @@ public class DownloadService extends Service
       @Override
       protected void onProgressUpdate(Integer... values)
       {
-         oNotificationBuilder.setProgress(100, values[0], false);
-
-         notification = oNotificationBuilder.build();
-
-         nm.notify(task.getId(), notification);
+//         oNotificationBuilder.setProgress(100, values[0], false);
+//
+//         notification = oNotificationBuilder.build();
+//
+//         nm.notify(task.getId(), notification);
+         callback.onProgress(task.getId(), values[0]);
       }
 
       @Override
       protected void onPostExecute(Void aVoid)
       {
          super.onPostExecute(aVoid);
+         Log.i(TAG, "onFinished task id: " + task.getId());
+         callback.onFinished(task.getId());
+
       }
 
-      private void downloadStarted()
-      {
-         intent = new Intent(DownloadService.this, DownloadService.class);
-         intent.putExtra(XTR_ACTION, DownloadService.ACT_VIEW);
-//         intent.putExtra(XTR_ID, task.getId());
-         intent.putExtra(XTR_DICT_INFO, (DictInfo) task);
-         intent.setAction(Long.toString(System.currentTimeMillis()));
-         PendingIntent pi = PendingIntent.getService(DownloadService.this,
-                                                     0,
-                                                     intent,
-                                                     0);
-
-
-         String title = getString(R.string.download) + ": " + task.getName();
-
-
-         oNotificationBuilder.setContentTitle(title)
-                             .setContentIntent(pi)
-                             .setSmallIcon(android.R.drawable.stat_sys_download)
-                             .setTicker(task.getName())
-                             .setWhen(System.currentTimeMillis());
-
-         notification = oNotificationBuilder.build();
-         notification.flags = Notification.FLAG_ONGOING_EVENT;
-
-         nm.notify(task.getId(), notification);
-      }
-
-      private void downloadFailed(String sError)
-      {
-         oNotificationBuilder.setContentText(sError);
-         notification = oNotificationBuilder.build();
-         notification.flags = Notification.FLAG_AUTO_CANCEL;
-
-         nm.cancel(task.getId());
-         nm.notify(task.getId(), notification);
-      }
-
-      private void downloadDone()
-      {
-         intent = new Intent(DownloadService.this, WordMateX.class);
-         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-         intent.setAction(Long.toString(System.currentTimeMillis()));
-         pi = PendingIntent.getActivity(DownloadService.this,
-                                        0,
-                                        intent,
-                                        0);
-
-         oNotificationBuilder.setContentTitle(task.getName())
-                             .setContentText(getString(android.R.string.ok))
-                             .setContentIntent(pi)
-                             .setSmallIcon(android.R.drawable.stat_sys_download_done)
-                             .setWhen(System.currentTimeMillis());
-         notification = oNotificationBuilder.build();
-         notification.flags = Notification.FLAG_AUTO_CANCEL;
-
-         nm.notify(task.getId(), notification);
-      }
-
-      private void unzipStarted()
-      {
-         oNotificationBuilder.setContentTitle(getString(R.string.extract) + ": " + task.getName())
-                             .setContentText(null)
-                             .setSmallIcon(android.R.drawable.stat_sys_download);
-
-         notification = oNotificationBuilder.build();
-
-         nm.notify(task.getId(), notification);
-      }
-
-      private void unzipEntryStart(String sEntry)
-      {
-         oNotificationBuilder.setContentText(sEntry);
-
-         notification = oNotificationBuilder.build();
-
-         nm.notify(task.getId(), notification);
-      }
+//      private void downloadStarted()
+//      {
+//         intent = new Intent(DownloadService.this, DownloadService.class);
+//         intent.putExtra(XTR_ACTION, DownloadService.ACT_VIEW);
+////         intent.putExtra(XTR_ID, task.getId());
+//         intent.putExtra(XTR_DICT_INFO, task);
+//         intent.setAction(Long.toString(System.currentTimeMillis()));
+//         PendingIntent pi = PendingIntent.getService(DownloadService.this,
+//                                                     0,
+//                                                     intent,
+//                                                     0);
+//
+//
+//         String title = getString(R.string.download) + ": " + task.getName();
+//
+//
+//         oNotificationBuilder.setContentTitle(title)
+//                             .setContentIntent(pi)
+//                             .setSmallIcon(android.R.drawable.stat_sys_download)
+//                             .setTicker(task.getName())
+//                             .setWhen(System.currentTimeMillis());
+//
+//         notification = oNotificationBuilder.build();
+//         notification.flags = Notification.FLAG_ONGOING_EVENT;
+//
+//         nm.notify(task.getId(), notification);
+//      }
+//
+//      private void downloadFailed(String sError)
+//      {
+//         oNotificationBuilder.setContentText(sError);
+//         notification = oNotificationBuilder.build();
+//         notification.flags = Notification.FLAG_AUTO_CANCEL;
+//
+//         nm.cancel(task.getId());
+//         nm.notify(task.getId(), notification);
+//      }
+//
+//      private void downloadDone()
+//      {
+//         intent = new Intent(DownloadService.this, WordMateX.class);
+//         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//         intent.setAction(Long.toString(System.currentTimeMillis()));
+//         pi = PendingIntent.getActivity(DownloadService.this,
+//                                        0,
+//                                        intent,
+//                                        0);
+//
+//         oNotificationBuilder.setContentTitle(task.getName())
+//                             .setContentText(getString(android.R.string.ok))
+//                             .setContentIntent(pi)
+//                             .setSmallIcon(android.R.drawable.stat_sys_download_done)
+//                             .setWhen(System.currentTimeMillis());
+//         notification = oNotificationBuilder.build();
+//         notification.flags = Notification.FLAG_AUTO_CANCEL;
+//
+//         nm.notify(task.getId(), notification);
+//      }
+//
+//      private void unzipStarted()
+//      {
+//         oNotificationBuilder.setContentTitle(getString(R.string.extract) + ": " + task.getName())
+//                             .setContentText(null)
+//                             .setSmallIcon(android.R.drawable.stat_sys_download);
+//
+//         notification = oNotificationBuilder.build();
+//
+//         nm.notify(task.getId(), notification);
+//      }
+//
+//      private void unzipEntryStart(String sEntry)
+//      {
+//         oNotificationBuilder.setContentText(sEntry);
+//
+//         notification = oNotificationBuilder.build();
+//
+//         nm.notify(task.getId(), notification);
+//      }
 
 
 //      private void sendProgress(int progress)
@@ -816,13 +701,14 @@ public class DownloadService extends Service
          InputStream inputStream = null;
          File tmpFile = null;
 
+         publishProgress(0);
          try
          {
             URL url = new URL(task.getUrl());
 
             URLConnection connection = url.openConnection();
 
-            inputStream = new BufferedInputStream(url.openStream(), 8192);
+            inputStream = new BufferedInputStream(url.openStream(), BUFFER_SIZE);
 
 //            outputStream = new FileOutputStream(file);
 
@@ -837,7 +723,8 @@ public class DownloadService extends Service
             long total = 0;
 
             int count,
-                  progress = 0, progressNew = 0;
+                  progress = 0,
+                  progressNew;
 
             while((count = inputStream.read(data)) != -1)
             {
@@ -849,7 +736,12 @@ public class DownloadService extends Service
                {
                   inputStream.close();
                   outputStream.close();
-                  tmpFile.delete();
+                  if(!tmpFile.delete())
+                  {
+                     Log.i(TAG, "Cannot delete the temp file");
+                     throw new RuntimeException("Can not delete file " + tmpFile.getName());
+                  }
+                  Log.i(TAG, "Temp file deleted");
                   return;
                }
 
@@ -870,14 +762,15 @@ public class DownloadService extends Service
 
             if(file.exists())
             {
-               file.delete();
+               if(!file.delete())
+               {
+                  throw new RuntimeException("Can not delete file " + file.getName());
+               }
             }
-            tmpFile.renameTo(file);
-
-            // Tell android about the file
-            intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-            intent.setData(Uri.fromFile(file));
-            DownloadService.this.sendBroadcast(intent);
+            if(!tmpFile.renameTo(file))
+            {
+               throw new RuntimeException("Can not rename file " + tmpFile.getName());
+            }
          }
          finally
          {
@@ -903,38 +796,16 @@ public class DownloadService extends Service
                   e.printStackTrace();
                }
             }
-            if(tmpFile != null)
-               tmpFile.delete();
+            assert tmpFile != null;
+            if(tmpFile.exists())
+            {
+               if(!tmpFile.delete())
+               {
+                  throw new RuntimeException("Can not delete file " + tmpFile.getName());
+               }
+            }
 
          }
-      }
-
-      private void unzip(String zipFilePath, String unzipAtLocation) throws Exception
-      {
-
-         File archive = new File(zipFilePath);
-
-         unzip(archive, unzipAtLocation);
-
-////         try
-////         {
-//
-//            ZipFile zipfile = new ZipFile(archive);
-//
-//            for(Enumeration e = zipfile.entries(); e.hasMoreElements(); )
-//            {
-//
-//               ZipEntry entry = (ZipEntry) e.nextElement();
-//
-//               unzipEntry(zipfile, entry, unzipAtLocation);
-//            }
-//
-////         }
-////         catch(Exception e)
-////         {
-////
-////            Log.e("Unzip zip", "Unzip exception", e);
-////         }
       }
 
       private void unzip(File archive, String unzipAtLocation) throws Exception
@@ -951,9 +822,25 @@ public class DownloadService extends Service
 
                ZipEntry entry = (ZipEntry) e.nextElement();
 
-               unzipEntryStart(entry.getName());
+//               unzipEntryStart(entry.getName());
+               callback.onUnzipEntryStart(task.getId(), entry.getName());
 
                unzipEntry(zipFile, entry, unzipAtLocation, files);
+
+               if(task.stop)
+               {
+                  for(File f : files)
+                  {
+                     if(f.getName()
+                         .endsWith(".tmp"))
+                     {
+                        if(!f.delete())
+                        {
+                           throw new RuntimeException("Can not delete file " + f.getName());
+                        }
+                     }
+                  }
+               }
             }
 
             Iterator<File> it = files.iterator();
@@ -962,10 +849,17 @@ public class DownloadService extends Service
                File f = it.next();
                if(f.exists())
                {
-                  f.delete();
+
+                  if(!f.delete())
+                  {
+                     throw new RuntimeException("Can not delete file " + f.getName());
+                  }
                }
-               it.next()
-                 .renameTo(f);
+               if(!it.next()
+                     .renameTo(f))
+               {
+                  throw new RuntimeException("Can not rename file " + f.getName());
+               }
             }
          }
          finally
@@ -973,18 +867,13 @@ public class DownloadService extends Service
             zipFile.close();
 
          }
-//         catch(Exception e)
-//         {
-//
-//            Log.e("Unzip zip", "Unzip exception", e);
-//         }
       }
 
 
       private void unzipEntry(ZipFile zipFile, ZipEntry zipEntry, String outputDir, LinkedList<File> files) throws IOException
       {
 
-         unzipEntryStart(zipEntry.getName());
+//         unzipEntryStart(zipEntry.getName());
          BufferedOutputStream outputStream = null;
 
          if(zipEntry.isDirectory())
@@ -1002,25 +891,14 @@ public class DownloadService extends Service
 
          Log.v(TAG, "Extracting: " + zipEntry);
 
-//         InputStream zin = zipFile.getInputStream(zipEntry);
-//         BufferedInputStream inputStream = new BufferedInputStream(zin);
          InputStream inputStream = new BufferedInputStream(zipFile.getInputStream(zipEntry), BUFFER_SIZE);
          try
          {
             File tmpFile = File.createTempFile(outputFile.getName(), null, outputFile.getParentFile());
-//         BufferedOutputStream outputStream = new BufferedOutputStream(new FileOutputStream(outputFile));
             outputStream = new BufferedOutputStream(new FileOutputStream(tmpFile), BUFFER_SIZE);
-
-            //IOUtils.copy(inputStream, outputStream);
 
             try
             {
-
-//               for(int c = inputStream.read(); c != -1; c = inputStream.read())
-//               {
-//                  outputStream.write(c);
-//               }
-
                int size = (int) zipEntry.getSize();
                int interval = size / 100;
                if(interval < 1)
@@ -1047,7 +925,10 @@ public class DownloadService extends Service
                      inputStream.close();
                      outputStream.close();
                      zipFile.close();
-                     tmpFile.delete();
+                     if(!tmpFile.delete())
+                     {
+                        throw new RuntimeException("Can not delete file " + tmpFile.getName());
+                     }
                      return;
                   }
                   else if(percent != 100)
@@ -1069,7 +950,9 @@ public class DownloadService extends Service
          finally
          {
             if(outputStream != null)
+            {
                outputStream.close();
+            }
             inputStream.close();
          }
       }
@@ -1082,7 +965,7 @@ public class DownloadService extends Service
             return;
          }
 
-         Log.v("ZIP E", "Creating dir " + dir.getName());
+         Log.v(TAG, "Creating dir " + dir.getName());
 
          if(!dir.mkdirs())
          {
