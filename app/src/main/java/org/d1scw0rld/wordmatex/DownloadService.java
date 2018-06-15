@@ -4,6 +4,7 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -36,15 +37,15 @@ import static java.lang.Integer.valueOf;
 public class DownloadService extends Service
 {
    final static int ACT_DOWNLOAD = 1,
-         ACT_CANCEL              = 2,
-         ACT_VIEW                = 3;
+         ACT_CANCEL = 2,
+         ACT_VIEW = 3;
 
    final static int BUFFER_SIZE = 65536;
 
    final static String XTR_ID = "id",
-         XTR_ACTION           = "action",
-         XTR_IS_DOWNLOADING   = "is_downloading",
-         XTR_DICT_INFO        = "dict_info";
+         XTR_ACTION = "action",
+         XTR_IS_DOWNLOADING = "is_downloading",
+         XTR_DICT_INFO = "dict_info";
 
    final static String TAG = "DOWNLOAD_SERVICE";
 
@@ -77,7 +78,7 @@ public class DownloadService extends Service
 
    IncomingHandler handler;
 
-   Runner.Callback callback;
+   Callback callback;
 
 //   Handler handler = new Handler()
 //   {
@@ -95,17 +96,12 @@ public class DownloadService extends Service
       tasks = new TreeMap<>();
       nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
       handler = new IncomingHandler(this);
-      callback = new Runner.Callback()
+      callback = new Callback()
       {
          private Intent intent;
          private Notification notification;
          private PendingIntent pi;
          private NotificationCompat.Builder oNotificationBuilder = new NotificationCompat.Builder(DownloadService.this, NTF_CHN);
-
-         private void init()
-         {
-
-         }
 
          @Override
          public void onDownloadStart(Task task)
@@ -148,8 +144,7 @@ public class DownloadService extends Service
                                           0);
 
 
-            oNotificationBuilder.setContentTitle(getString(R.string.download) + ": " + task.getName())
-                                .setContentIntent(pi)
+            oNotificationBuilder.setContentIntent(pi)
                                 .setSmallIcon(android.R.drawable.stat_sys_download)
                                 .setTicker(task.getName())
                                 .setProgress(100, progress, false);
@@ -319,7 +314,7 @@ public class DownloadService extends Service
                showToast(getString(R.string.download) + ": " + t.getName());
 
 //               new RunnerNew(t).start();
-               new Runner(t, callback).execute();
+               new Runner(t, callback).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }
             break;
 
@@ -400,7 +395,7 @@ public class DownloadService extends Service
    }
 
 
-//   class RunnerNew extends Thread
+   //   class RunnerNew extends Thread
 //   {
 //      Task task;
 //
@@ -527,9 +522,31 @@ public class DownloadService extends Service
 //      }
 //   }
 //
-
-   static class Runner extends AsyncTask<Void, Integer, Void>
+   interface Callback
    {
+      void onDownloadStart(Task task);
+
+      void onProgress(Task task, int progress);
+
+      void onDone(Task task, File file);
+
+      void onFail(Task task, String sError);
+
+      void onUnzipStart(Task task);
+
+      void onUnzipEntryStart(Task task, String sEntry);
+
+//         void onUnzipFailed(int id, String sError);
+//
+//         void onUnzipDone();
+
+      void onFinished(int id);
+   }
+
+   class Runner extends AsyncTask<Void, Integer, Void>
+   {
+      private final static int STG_UNZIP_START = 1,
+                               STG_UNZIP_ENTRY = 2;
       private Task task;
 
       private Intent intent;
@@ -542,31 +559,14 @@ public class DownloadService extends Service
 
       private Callback callback;
 
-      interface Callback
-      {
-         void onDownloadStart(Task task);
-
-         void onProgress(Task task, int progress);
-
-         void onDone(Task task, File file);
-
-         void onFail(Task task, String sError);
-
-         void onUnzipStart(Task task);
-
-         void onUnzipEntryStart(Task task, String sEntry);
-
-//         void onUnzipFailed(int id, String sError);
-//
-//         void onUnzipDone();
-
-         void onFinished(int id);
-      }
+      NotificationHelper notificationHelper;
+      File file;
 
       Runner(Task task, Callback callback)
       {
          this.task = task;
          this.callback = callback;
+         notificationHelper = new NotificationHelper(task);
 
 //         oNotificationBuilder = new NotificationCompat.Builder(DownloadService.this, NTF_CHN);
       }
@@ -577,7 +577,8 @@ public class DownloadService extends Service
          super.onPreExecute();
 
 //         downloadStarted();
-         callback.onDownloadStart(task);
+//         callback.onDownloadStart(task);
+         notificationHelper.onDownloadStart();
       }
 
       @Override
@@ -585,7 +586,7 @@ public class DownloadService extends Service
       {
          File path = new File(WordMateX.FILES_PATH);
 
-         File file = new File(path, task.getFile());
+         file = new File(path, task.getFile());
          // Make sure the Downloads directory exists.
          if(!path.exists())
          {
@@ -604,7 +605,8 @@ public class DownloadService extends Service
             download(file);
 
             Log.e(TAG, "Task id: " + task.getId());
-            callback.onDone(task, file);
+//            callback.onDone(task, file);
+
 
             if(file.getName()
                    .toLowerCase()
@@ -612,7 +614,8 @@ public class DownloadService extends Service
             {
 
 //            unzipStarted();
-               callback.onUnzipStart(task);
+//               callback.onUnzipStart(task);
+               notificationHelper.onUnzipStart();
 
                try
                {
@@ -620,13 +623,15 @@ public class DownloadService extends Service
                                                          .substring(0,
                                                                     file.getName()
                                                                         .indexOf(".zip")));
-                  callback.onDone(task, file);
+//                  callback.onDone(task, file);
+//                  notificationHelper.onDone(file);
 
                }
                catch(Exception e)
                {
                   e.printStackTrace();
-                  callback.onFail(task, e.getMessage());
+//                  callback.onFail(task, e.getMessage());
+                  notificationHelper.onFail(e.getMessage());
                }
                finally
                {
@@ -641,7 +646,8 @@ public class DownloadService extends Service
          {
             e.printStackTrace();
 //            downloadFailed(e.getMessage());
-            callback.onFail(task, e.getMessage());
+//            callback.onFail(task, e.getMessage());
+            notificationHelper.onFail(e.getMessage());
          }
 
 
@@ -660,7 +666,8 @@ public class DownloadService extends Service
 //         notification = oNotificationBuilder.build();
 //
 //         nm.notify(task.getId(), notification);
-         callback.onProgress(task, values[0]);
+//         callback.onProgress(task, values[0]);
+         notificationHelper.onProgress(values[0]);
       }
 
       @Override
@@ -668,7 +675,9 @@ public class DownloadService extends Service
       {
          super.onPostExecute(aVoid);
          Log.i(TAG, "onFinished task id: " + task.getId());
-         callback.onFinished(task.getId());
+//         callback.onFinished(task.getId());
+         notificationHelper.onDone(file);
+         notificationHelper.onFinished(task.getId());
 
       }
 
@@ -891,7 +900,8 @@ public class DownloadService extends Service
                ZipEntry entry = (ZipEntry) e.nextElement();
 
 //               unzipEntryStart(entry.getName());
-               callback.onUnzipEntryStart(task, entry.getName());
+//               callback.onUnzipEntryStart(task, entry.getName());
+               notificationHelper.onUnzipEntryStart(entry.getName());
 
                unzipEntry(zipFile, entry, unzipAtLocation, files);
 
@@ -1158,5 +1168,166 @@ public class DownloadService extends Service
    {
       Toast.makeText(this, s, Toast.LENGTH_SHORT)
            .show();
+   }
+
+   class NotificationHelper
+   {
+      private Context context;
+
+      private Task task;
+
+      private Intent intent;
+
+      private PendingIntent pi;
+
+      private NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+      private NotificationCompat.Builder oNotificationBuilder;
+
+      NotificationHelper(Task task)
+      {
+         this(DownloadService.this, task);
+      }
+
+      NotificationHelper(Context context, Task task)
+      {
+         this.context = context;
+         this.task = task;
+         oNotificationBuilder = new NotificationCompat.Builder(context, NTF_CHN);
+      }
+
+      public void onDownloadStart()
+      {
+         intent = new Intent(context, DownloadService.class);
+         intent.putExtra(XTR_ACTION, DownloadService.ACT_VIEW);
+         intent.putExtra(XTR_DICT_INFO, (DictInfo) task);
+         intent.setAction(Long.toString(System.currentTimeMillis()));
+         pi = PendingIntent.getService(context,
+                                       0,
+                                       intent,
+                                       0);
+
+
+         String title = getString(R.string.download) + ": " + task.getName();
+
+         oNotificationBuilder.setContentTitle(title)
+                             .setContentIntent(pi)
+                             .setSmallIcon(android.R.drawable.stat_sys_download)
+//                             .setTicker(task.getName())
+                             .setWhen(System.currentTimeMillis())
+                             .setOngoing(true);
+
+         notificationManager.notify(task.getId(), oNotificationBuilder.build());
+
+         Log.i(TAG, "onDownloadStart Task:"+task.getName());
+      }
+
+      public void onProgress(int progress)
+      {
+
+         oNotificationBuilder.setProgress(100, progress, false);
+
+         notificationManager.notify(task.getId(), oNotificationBuilder.build());
+         Log.i(TAG, "onProgress Task:" + task.getName() + " percent:" + progress);
+      }
+
+      public void onDone(File file)
+      {
+         intent = new Intent(context, WordMateX.class);
+//         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+         intent.setAction(Long.toString(System.currentTimeMillis()));
+
+         pi = PendingIntent.getActivity(context,
+                                        0,
+                                        intent,
+                                        0);
+
+         oNotificationBuilder.setContentTitle(task.getName())
+//                             .setTicker(task.getName())
+                             .setContentText(getString(android.R.string.ok))
+                             .setContentIntent(pi) // TODO ???
+                             .setProgress(0, 0, false)
+                             .setSmallIcon(android.R.drawable.stat_sys_download_done)
+//                             .setWhen(System.currentTimeMillis())
+                             .setOngoing(false)
+                             .setAutoCancel(true);
+
+//         notificationManager.cancel(task.getId());
+         notificationManager.notify(task.getId(), oNotificationBuilder.build());
+         Log.i(TAG, "Done Task:" + task.getName());
+         // Tell android about the file
+         intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+         intent.setData(Uri.fromFile(file));
+         sendBroadcast(intent);
+      }
+
+      public void onFail(String sError)
+      {
+         intent = new Intent(context, WordMateX.class);
+         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+         intent.setAction(Long.toString(System.currentTimeMillis()));
+
+         pi = PendingIntent.getActivity(context,
+                                        0,
+                                        intent,
+                                        0);
+
+         oNotificationBuilder.setContentTitle(task.getName())
+//                             .setTicker(task.getName())
+                             .setContentText(sError)
+                             .setContentIntent(pi)
+                             .setSmallIcon(android.R.drawable.stat_notify_error)
+                             .setWhen(System.currentTimeMillis())
+                             .setAutoCancel(true);
+
+//         nm.cancel(task.getId());
+         notificationManager.notify(task.getId(), oNotificationBuilder.build());
+      }
+
+      public void onUnzipStart()
+      {
+         intent = new Intent(context, DownloadService.class);
+         intent.putExtra(XTR_ACTION, DownloadService.ACT_VIEW);
+         intent.putExtra(XTR_DICT_INFO, (DictInfo) task);
+         intent.setAction(Long.toString(System.currentTimeMillis()));
+         pi = PendingIntent.getService(context,
+                                       0,
+                                       intent,
+                                       0);
+
+         oNotificationBuilder.setTicker(task.getName())
+                             .setContentTitle(getString(R.string.extract) + ": " + task.getName())
+                             .setContentText(null)
+                             .setSmallIcon(android.R.drawable.stat_sys_download)
+                             .setContentIntent(pi);
+
+         notificationManager.notify(task.getId(), oNotificationBuilder.build());
+      }
+
+      public void onUnzipEntryStart(String sEntry)
+      {
+         intent = new Intent(context, DownloadService.class);
+         intent.putExtra(XTR_ACTION, DownloadService.ACT_VIEW);
+         intent.putExtra(XTR_DICT_INFO, (DictInfo) task);
+         intent.setAction(Long.toString(System.currentTimeMillis()));
+         pi = PendingIntent.getService(context,
+                                       0,
+                                       intent,
+                                       0);
+
+         oNotificationBuilder.setTicker(task.getName())
+                             .setContentTitle(getString(R.string.extract) + ": " + task.getName())
+                             .setContentText(sEntry)
+                             .setSmallIcon(android.R.drawable.stat_sys_download)
+                             .setContentIntent(pi);
+
+         notificationManager.notify(task.getId(), oNotificationBuilder.build());
+      }
+
+      public void onFinished(int id)
+      {
+         handler.sendEmptyMessage(id);
+      }
    }
 }
