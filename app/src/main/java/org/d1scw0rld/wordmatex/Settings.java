@@ -33,6 +33,7 @@ public class Settings extends AppCompatActivity
       @Override
       public void onCreatePreferences(Bundle savedInstanceState, String rootKey)
       {
+         getPreferenceManager().setSharedPreferencesName(WordMateX.PREF_FILE);
          addPreferencesFromResource(R.xml.preference_screen);
       }
 

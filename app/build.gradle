@@ -5,8 +5,6 @@ android {
     buildToolsVersion "27.0.3"
     defaultConfig {
         applicationId 'org.d1scw0rld.wordmatex'
-//        minSdkVersion 2
-//        targetSdkVersion 2
         minSdkVersion 14
         targetSdkVersion 27
         multiDexEnabled true

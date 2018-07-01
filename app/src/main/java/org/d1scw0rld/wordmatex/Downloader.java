@@ -4,13 +4,16 @@ import android.app.SearchManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.ActionMenuView;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
@@ -26,6 +29,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.TextView;
 
 import org.json.JSONArray;
@@ -63,6 +67,12 @@ public class Downloader extends AppCompatActivity
 
    private DictsInfoAdapter adDictsInfo;
 
+   private Toolbar toolbar;
+
+   private MenuItem searchMenuItem;
+
+   private SearchView searchView;
+
    private CoordinatorLayout oCoordinatorLayout;
 
 //   private DropBoxTask.Callback callback;
@@ -81,11 +91,35 @@ public class Downloader extends AppCompatActivity
 
       oCoordinatorLayout = findViewById(R.id.coordinator_layout);
 
-      Toolbar toolbar = findViewById(R.id.toolbar);
+      toolbar = findViewById(R.id.toolbar);
       setSupportActionBar(toolbar);
       assert getSupportActionBar() != null;
       getSupportActionBar().setDisplayShowTitleEnabled(false);
 
+
+//      ActionBar actionBar = getSupportActionBar();
+//      if (actionBar != null) {
+//         actionBar.hide();
+//      }
+//
+//      SearchView searchView = findViewById(R.id.search);
+//      searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener()
+//      {
+//         @Override
+//         public boolean onQueryTextSubmit(String query)
+//         {
+//            return false;
+//         }
+//
+//         @Override
+//         public boolean onQueryTextChange(String newText)
+//         {
+////            adDictionaries.filter(newText);
+//            adDictsInfo.filter(newText);
+//
+//            return true;
+//         }
+//      });
 //      oProgressBar = findViewById(R.id.progress_bar);
 
       swipeContainer = findViewById(R.id.swipe_container);
@@ -201,7 +235,7 @@ public class Downloader extends AppCompatActivity
 
    }
 
-//   private static class DropBoxTask extends AsyncTask<Void, String, ArrayList<Metadata>>
+   //   private static class DropBoxTask extends AsyncTask<Void, String, ArrayList<Metadata>>
 //   {
 //      DbxRequestConfig requestConfig;
 //      DbxClientV2      dbxClient;
@@ -314,7 +348,8 @@ public class Downloader extends AppCompatActivity
 //
    private static class GetDictsInfoTask extends AsyncTask<Void, String, ArrayList<DictInfo>>
    {
-      private ArrayList<DictInfo> alDictInfos = null;
+      //      private ArrayList<DictInfo> alDictInfos = null;
+      private ArrayList<DictInfo> alDictInfos = new ArrayList<>();
 
       private Callback callback;
 
@@ -355,7 +390,7 @@ public class Downloader extends AppCompatActivity
 
                JSONObject joTemp;
 
-               alDictInfos = new ArrayList<>();
+//               alDictInfos = new ArrayList<>();
 
                JSONArray jaDicts = joRoot.getJSONArray("dicts");
                for(int i = 0; i < jaDicts.length(); i++)
@@ -614,7 +649,7 @@ public class Downloader extends AppCompatActivity
       {
          TextView tvTitle;
          //               tvSize;
-         View     view;
+         View view;
 
          ViewHolder(View itemView)
          {
@@ -706,9 +741,41 @@ public class Downloader extends AppCompatActivity
       inflater.inflate(R.menu.search_menu, menu);
 
       SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-      MenuItem searchMenuItem = menu.findItem(R.id.search);
-      SearchView searchView = (SearchView) searchMenuItem.getActionView();
-//      SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchMenuItem);
+      searchMenuItem = menu.findItem(R.id.search);
+      searchView = (SearchView) searchMenuItem.getActionView();
+
+      toolbar.getViewTreeObserver()
+             .addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener()
+             {
+                @Override
+                public void onGlobalLayout()
+                {
+                   if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
+                   {
+                      toolbar.getViewTreeObserver()
+                             .removeOnGlobalLayoutListener(this);
+                   }
+
+                   ActionMenuView.LayoutParams params =
+                         new ActionMenuView.LayoutParams(ActionMenuView.LayoutParams.WRAP_CONTENT, ActionMenuView.LayoutParams.MATCH_PARENT);
+                   params.width = toolbar.getWidth();
+
+                   searchView.setIconifiedByDefault(false);
+                   searchMenuItem.expandActionView();
+                   searchView.setOnCloseListener(new SearchView.OnCloseListener()
+                   {
+                      @Override
+                      public boolean onClose()
+                      {
+                         return true;
+                      }
+                   });
+                   searchView.setLayoutParams(params);
+                }
+             });
+
+      searchView.setIconifiedByDefault(false);
+      searchMenuItem.expandActionView();
       searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener()
       {
          @Override

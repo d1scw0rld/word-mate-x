@@ -34,7 +34,7 @@
     <string name="action_settings">Settings</string>
     <string name="action_about">About</string>
     <string name="sample_title">Title</string>
-    <string name="about_msg">Version : %1$s Build : %2$s  Copyright 2009 Hongbo All rights reserved  http://www.wordmate.net hongbo@wordmate.net</string>
+    <string name="about_msg">Version : %1$s Build : %2$s  Copyright 2018 D1scw0rld All rights reserved wordmatex@gmail.com</string>
     <string name="sample_size">size</string>
     <string name="sample_name">Name</string>
     <string name="sample_size_1">100 KB</string>

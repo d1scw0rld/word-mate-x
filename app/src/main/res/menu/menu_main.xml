@@ -3,6 +3,9 @@
       xmlns:tools="http://schemas.android.com/tools"
       tools:context=".WordMateX">
 
+    <!--<group-->
+    <!--android:id="@+id/group_dict">-->
+
     <item
         android:id="@+id/action_search"
         android:icon="@drawable/ic_search_white_24dp"
@@ -11,68 +14,57 @@
         app:showAsAction="always"
         />
 
-
     <item
         android:id="@+id/action_dictionary"
         android:icon="@drawable/ic_book_white_24dp"
         android:title="@string/action_sort"
         app:showAsAction="always"/>
+    <!--</group>-->
 
     <item
         android:id="@+id/action_about"
-        android:title="@string/action_about"
         android:alphabeticShortcut='a'
+        android:title="@string/action_about"
         app:showAsAction="never"/>
 
     <item
         android:id="@+id/action_settings"
-        android:title="@string/action_settings"
         android:alphabeticShortcut='s'
+        android:title="@string/action_settings"
         app:showAsAction="never"/>
 
     <item
         android:id="@+id/action_dict_downloader"
-        android:title="@string/downloader"
         android:alphabeticShortcut='d'
+        android:title="@string/downloader"
         app:showAsAction="never"/>
+
     <group
         android:id="@+id/group_info">
-
-    <item
-        android:id="@+id/action_dict_info"
-        android:title="@string/dict_info"
-        android:alphabeticShortcut='i'
-        app:showAsAction="never"/>
+        <item
+            android:id="@+id/action_dict_info"
+            android:alphabeticShortcut='i'
+            android:title="@string/dict_info"
+            app:showAsAction="never"/>
     </group>
 
     <group
         android:id="@+id/group_words">
-    <item
-        android:id="@+id/action_prev_word"
-        android:title="@string/prev"
-        android:alphabeticShortcut='n'
-        app:showAsAction="never"/>
+        <item
+            android:id="@+id/action_prev_word"
+            android:alphabeticShortcut='n'
+            android:icon="@android:drawable/arrow_up_float"
+            android:title="@string/prev"
+            app:showAsAction="never|always"/>
 
-    <item
-        android:id="@+id/action_next_word"
-        android:title="@string/next"
-        android:alphabeticShortcut='m'
-        app:showAsAction="never"/>
+        <item
+            android:id="@+id/action_next_word"
+            android:alphabeticShortcut='m'
+            android:icon="@android:drawable/arrow_down_float"
+            android:title="@string/next"
+            app:showAsAction="never|always"/>
     </group>
-
-
-
-
-    <!--    <item -->
-    <!--       android:id="@+id/action_imp_db_test" -->
-    <!--       android:orderInCategory="8" -->
-    <!--       android:title="Import test" -->
-    <!--       app:showAsAction="never"/> -->
-
-    <!--       <item -->
-    <!--       android:id="@+id/action_exp_db_test" -->
-    <!--       android:orderInCategory="9" -->
-    <!--       android:title="Export test" -->
-    <!--       app:showAsAction="never"/> -->
-
 </menu>
+
+    <!--android:icon="@android:drawable/ic_media_previous"-->
+    <!--android:icon="@android:drawable/ic_media_next"-->

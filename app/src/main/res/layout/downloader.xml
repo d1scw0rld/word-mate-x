@@ -8,6 +8,40 @@
     android:layout_height="match_parent"
     tools:context=".Downloader">
 
+    <!--<LinearLayout-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="match_parent"-->
+    <!--android:orientation="vertical">-->
+
+    <!--<TextView-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="wrap_content"-->
+    <!--android:background="@android:drawable/title_bar"-->
+    <!--android:ellipsize="end"-->
+    <!--android:maxLines="1"-->
+    <!--android:paddingLeft="16dp"-->
+    <!--android:paddingRight="16dp"-->
+    <!--android:text="@string/downloader"-->
+    <!--android:textStyle="bold"/>-->
+
+    <!--<android.support.v7.widget.SearchView-->
+    <!--android:id="@+id/search"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="wrap_content"/>-->
+
+    <!--<android.support.v4.widget.SwipeRefreshLayout-->
+    <!--android:id="@+id/swipe_container"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="match_parent">-->
+
+    <!--<android.support.v7.widget.RecyclerView-->
+    <!--android:id="@+id/rv_dictionaries"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="match_parent"/>-->
+
+    <!--</android.support.v4.widget.SwipeRefreshLayout>-->
+
+    <!--</LinearLayout>-->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -33,7 +67,7 @@
             <android.support.v7.widget.Toolbar
                 android:id="@+id/toolbar"
                 android:layout_width="match_parent"
-                android:layout_height="?attr/actionBarSize"
+                android:layout_height="?android:attr/actionBarSize"
                 android:contentInsetLeft="0dp"
                 android:contentInsetStart="0dp"
                 app:contentInsetLeft="0dp"
@@ -43,16 +77,16 @@
             </android.support.v7.widget.Toolbar>
 
             <!--<ProgressBar-->
-                <!--android:id="@+id/progress_bar"-->
-                <!--style="?android:attr/progressBarStyleHorizontal"-->
-                <!--android:layout_width="fill_parent"-->
-                <!--android:layout_height="wrap_content"-->
-                <!--android:layout_below="@+id/framelauout"-->
-                <!--android:layout_marginTop="-7dp"-->
-                <!--android:backgroundTint="@android:color/white"-->
-                <!--android:indeterminate="true"-->
-                <!--android:indeterminateTint="?attr/colorAccent"-->
-                <!--android:max="100"/>-->
+            <!--android:id="@+id/progress_bar"-->
+            <!--style="?android:attr/progressBarStyleHorizontal"-->
+            <!--android:layout_width="fill_parent"-->
+            <!--android:layout_height="wrap_content"-->
+            <!--android:layout_below="@+id/framelauout"-->
+            <!--android:layout_marginTop="-7dp"-->
+            <!--android:backgroundTint="@android:color/white"-->
+            <!--android:indeterminate="true"-->
+            <!--android:indeterminateTint="?attr/colorAccent"-->
+            <!--android:max="100"/>-->
 
         </android.support.design.widget.AppBarLayout>
 

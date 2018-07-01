@@ -2,14 +2,14 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
     <android.support.v7.preference.CheckBoxPreference
         android:defaultValue="true"
-        android:key="Wordlist"
+        android:key="word_list"
         android:summary="@string/enable_wordlist"
         android:title="@string/enable_wordlist"/>
 
-    <android.support.v7.preference.CheckBoxPreference
-        android:defaultValue="true"
-        android:key="Notify"
-        android:summary="@string/notify_update"
-        android:title="@string/notify_update"
-        />
+    <!--<android.support.v7.preference.CheckBoxPreference-->
+        <!--android:defaultValue="true"-->
+        <!--android:key="Notify"-->
+        <!--android:summary="@string/notify_update"-->
+        <!--android:title="@string/notify_update"-->
+        <!--/>-->
 </android.support.v7.preference.PreferenceScreen>

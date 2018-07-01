@@ -12,6 +12,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v4.app.NotificationCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -314,7 +315,8 @@ public class DownloadService extends Service
                showToast(getString(R.string.download) + ": " + t.getName());
 
 //               new RunnerNew(t).start();
-               new Runner(t, callback).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+//               new Runner(t, callback).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+               new RunnerThread(t).start();
             }
             break;
 
@@ -324,7 +326,7 @@ public class DownloadService extends Service
             if(t != null)
             {
                t.stop = true;
-               nm.cancel(id);
+//               nm.cancel(id);
                tasks.remove(valueOf(id));
                Log.i(TAG, "Task cancel " + t.getName());
                Log.i(TAG, "Tasks " + tasks.size());
@@ -546,7 +548,7 @@ public class DownloadService extends Service
    class Runner extends AsyncTask<Void, Integer, Void>
    {
       private final static int STG_UNZIP_START = 1,
-                               STG_UNZIP_ENTRY = 2;
+            STG_UNZIP_ENTRY = 2;
       private Task task;
 
       private Intent intent;
@@ -677,7 +679,13 @@ public class DownloadService extends Service
          Log.i(TAG, "onFinished task id: " + task.getId());
 //         callback.onFinished(task.getId());
          notificationHelper.onDone(file);
-         notificationHelper.onFinished(task.getId());
+
+         // Tell android about the file
+         intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+         intent.setData(Uri.fromFile(file));
+         sendBroadcast(intent);
+
+         handler.sendEmptyMessage(task.getId());
 
       }
 
@@ -1170,6 +1178,413 @@ public class DownloadService extends Service
            .show();
    }
 
+   class RunnerThread extends Thread
+   {
+      class TaskCanceledException extends Exception
+      {}
+
+      Task task;
+
+      NotificationHelper notificationHelper;
+
+      File file;
+
+      RunnerThread(Task t)
+      {
+         task = t;
+
+         notificationHelper = new NotificationHelper(task);
+      }
+
+      public void run()
+      {
+
+         notificationHelper.onDownloadStart();
+
+         File path = new File(WordMateX.FILES_PATH);
+
+         file = new File(path, task.getFile());
+         // Make sure the Downloads directory exists.
+         if(!path.exists())
+         {
+            if(!path.mkdirs())
+            {
+               throw new RuntimeException("Unable to create directory: " + path);
+            }
+         }
+         else if(!path.isDirectory())
+         {
+            throw new IllegalStateException("Download path is not a directory: " + path);
+         }
+
+         try
+         {
+            download(file);
+
+//            if(task.stop)
+//               return;
+
+            Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            intent.setData(Uri.fromFile(file));
+            sendBroadcast(intent);
+
+            Log.e(TAG, "Task id: " + task.getId());
+
+
+            if(file.getName()
+                   .toLowerCase()
+                   .endsWith(".zip"))
+            {
+
+               notificationHelper.onUnzipStart();
+
+               try
+               {
+                  unzip(file, WordMateX.FILES_PATH + file.getName()
+                                                         .substring(0,
+                                                                    file.getName()
+                                                                        .indexOf(".zip")));
+               }
+
+               catch(IOException e)
+               {
+                  e.printStackTrace();
+                  notificationHelper.onFail(e.getMessage());
+               }
+               catch(TaskCanceledException e)
+               {
+                  notificationHelper.onCancel();
+               }
+               finally
+               {
+                  if(!file.delete())
+                  {
+                     throw new RuntimeException("Can not delete file " + file.getName());
+                  }
+               }
+            }
+
+            Log.i(TAG, "onFinished task id: " + task.getId());
+            notificationHelper.onDone(file);
+
+            intent = new Intent("dict-added");
+            // Adding some data
+//            intent.putExtra("message", myInteger);
+            LocalBroadcastManager.getInstance(DownloadService.this).sendBroadcast(intent);
+
+//            handler.sendEmptyMessage(task.getId());
+         }
+         catch(IOException e)
+         {
+            e.printStackTrace();
+            notificationHelper.onFail(e.getMessage());
+         }
+         catch(TaskCanceledException e)
+         {
+            notificationHelper.onCancel();
+         }
+         finally
+         {
+            handler.sendEmptyMessage(task.getId());
+         }
+      }
+
+      private void download(File file) throws IOException, TaskCanceledException
+      {
+
+         OutputStream outputStream = null;
+         InputStream inputStream = null;
+         File tmpFile = null;
+
+         notificationHelper.onProgress(0);
+         try
+         {
+            URL url = new URL(task.getUrl());
+
+            URLConnection connection = url.openConnection();
+
+            inputStream = new BufferedInputStream(url.openStream(), BUFFER_SIZE);
+
+            tmpFile = File.createTempFile(file.getName(), null, file.getParentFile());
+            outputStream = new BufferedOutputStream(new FileOutputStream(tmpFile), BUFFER_SIZE);
+
+            int lengthOfFile = connection.getContentLength();
+
+
+            byte data[] = new byte[1024];
+
+            long total = 0;
+
+            int count,
+                  progress = 0,
+                  progressNew;
+
+            while((count = inputStream.read(data)) != -1)
+            {
+               total += count;
+               // writing data to file
+               outputStream.write(data, 0, count);
+
+               if(task.stop)
+               {
+//                  inputStream.close();
+//                  outputStream.close();
+//                  if(!tmpFile.delete())
+//                  {
+//                     Log.i(TAG, "Cannot delete the temp file");
+//                     throw new RuntimeException("Can not delete file " + tmpFile.getName());
+//                  }
+//                  Log.i(TAG, "Temp file deleted");
+//
+//                  return;
+
+                  throw new TaskCanceledException();
+               }
+
+               if(lengthOfFile < 0)
+               {
+                  continue;
+               }
+
+               // publishing the progress....
+               // After this onProgressUpdate will be called
+               progressNew = (int) (total * 100) / lengthOfFile;
+               if(progress != progressNew)
+               {
+                  progress = progressNew;
+                  notificationHelper.onProgress(progress);
+               }
+            }
+
+            if(file.exists())
+            {
+               if(!file.delete())
+               {
+                  throw new RuntimeException("Can not delete file " + file.getName());
+               }
+            }
+            if(!tmpFile.renameTo(file))
+            {
+               throw new RuntimeException("Can not rename file " + tmpFile.getName());
+            }
+         }
+         finally
+         {
+            if(inputStream != null)
+            {
+               try
+               {
+                  inputStream.close();
+               }
+               catch(IOException e)
+               {
+                  e.printStackTrace();
+               }
+            }
+            if(outputStream != null)
+            {
+               try
+               {
+                  outputStream.close();
+               }
+               catch(IOException e)
+               {
+                  e.printStackTrace();
+               }
+            }
+            if(tmpFile != null && tmpFile.exists())
+            {
+               if(!tmpFile.delete())
+               {
+                  throw new RuntimeException("Can not delete file " + tmpFile.getName());
+               }
+            }
+
+         }
+      }
+
+      private void unzip(File archive, String unzipAtLocation) throws IOException, TaskCanceledException
+      {
+         ZipFile zipFile = new ZipFile(archive);
+
+         LinkedList<File> files = new LinkedList<>();
+
+         try
+         {
+            for(Enumeration e = zipFile.entries(); e.hasMoreElements(); )
+            {
+
+               ZipEntry entry = (ZipEntry) e.nextElement();
+
+               notificationHelper.onUnzipEntryStart(entry.getName());
+
+               unzipEntry(zipFile, entry, unzipAtLocation, files);
+
+//               if(task.stop)
+//               {
+//                  for(File f : files)
+//                  {
+//                     if(f.getName()
+//                         .endsWith(".tmp"))
+//                     {
+//                        if(!f.delete())
+//                        {
+//                           throw new RuntimeException("Can not delete file " + f.getName());
+//                        }
+//                     }
+//                  }
+//               }
+            }
+
+            Iterator<File> it = files.iterator();
+            while(it.hasNext())
+            {
+               File f = it.next();
+               if(f.exists())
+               {
+
+                  if(!f.delete())
+                  {
+                     throw new RuntimeException("Can not delete file " + f.getName());
+                  }
+               }
+               if(!it.next()
+                     .renameTo(f))
+               {
+                  throw new RuntimeException("Can not rename file " + f.getName());
+               }
+            }
+         }
+         catch(TaskCanceledException e)
+         {
+            for(File f : files)
+            {
+               if(f.getName()
+                   .endsWith(".tmp"))
+               {
+                  if(!f.delete())
+                  {
+                     throw new RuntimeException("Can not delete file " + f.getName());
+                  }
+               }
+            }
+
+            throw e;
+         }
+         finally
+         {
+            zipFile.close();
+
+         }
+      }
+
+
+      private void unzipEntry(ZipFile zipFile, ZipEntry zipEntry, String outputDir, LinkedList<File> files) throws IOException, TaskCanceledException
+      {
+
+//         unzipEntryStart(zipEntry.getName());
+         BufferedOutputStream outputStream = null;
+
+         if(zipEntry.isDirectory())
+         {
+            createDir(new File(outputDir, zipEntry.getName()));
+            return;
+         }
+
+         File outputFile = new File(outputDir, zipEntry.getName());
+         if(!outputFile.getParentFile()
+                       .exists())
+         {
+            createDir(outputFile.getParentFile());
+         }
+
+         Log.v(TAG, "Extracting: " + zipEntry);
+
+         InputStream inputStream = new BufferedInputStream(zipFile.getInputStream(zipEntry), BUFFER_SIZE);
+         try
+         {
+            File tmpFile = File.createTempFile(outputFile.getName(), null, outputFile.getParentFile());
+            outputStream = new BufferedOutputStream(new FileOutputStream(tmpFile), BUFFER_SIZE);
+
+            try
+            {
+               int size = (int) zipEntry.getSize();
+               int interval = size / 100;
+               if(interval < 1)
+               {
+                  interval = 1;
+               }
+               int percent = 0;
+               int p = 0;
+               int to = 0;
+               while(p < size)
+               {
+                  to += interval;
+                  if(to > size)
+                  {
+                     to = size;
+                  }
+                  while(p < to)
+                  {
+                     outputStream.write(inputStream.read());
+                     p += 1;
+                  }
+                  if(task.stop)
+                  {
+                     throw new TaskCanceledException();
+//                     inputStream.close();
+//                     outputStream.close();
+//                     zipFile.close();
+//                     if(!tmpFile.delete())
+//                     {
+//                        throw new RuntimeException("Can not delete file " + tmpFile.getName());
+//                     }
+//                     return;
+                  }
+                  else if(percent != 100)
+                  {
+                     percent += 1;
+                     notificationHelper.onProgress(percent);
+                  }
+               }
+               files.add(outputFile);
+               files.add(tmpFile);
+
+            }
+            finally
+            {
+               outputStream.close();
+            }
+
+         }
+         finally
+         {
+            if(outputStream != null)
+            {
+               outputStream.close();
+            }
+            inputStream.close();
+         }
+      }
+
+      private void createDir(File dir)
+      {
+
+         if(dir.exists())
+         {
+            return;
+         }
+
+         Log.v(TAG, "Creating dir " + dir.getName());
+
+         if(!dir.mkdirs())
+         {
+
+            throw new RuntimeException("Can not create dir " + dir);
+         }
+      }
+   }
+
    class NotificationHelper
    {
       private Context context;
@@ -1219,7 +1634,7 @@ public class DownloadService extends Service
 
          notificationManager.notify(task.getId(), oNotificationBuilder.build());
 
-         Log.i(TAG, "onDownloadStart Task:"+task.getName());
+         Log.i(TAG, "onDownloadStart Task:" + task.getName());
       }
 
       public void onProgress(int progress)
@@ -1257,9 +1672,9 @@ public class DownloadService extends Service
          notificationManager.notify(task.getId(), oNotificationBuilder.build());
          Log.i(TAG, "Done Task:" + task.getName());
          // Tell android about the file
-         intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-         intent.setData(Uri.fromFile(file));
-         sendBroadcast(intent);
+//         intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+//         intent.setData(Uri.fromFile(file));
+//         sendBroadcast(intent);
       }
 
       public void onFail(String sError)
@@ -1325,9 +1740,14 @@ public class DownloadService extends Service
          notificationManager.notify(task.getId(), oNotificationBuilder.build());
       }
 
-      public void onFinished(int id)
+      public void onCancel()
       {
-         handler.sendEmptyMessage(id);
+         notificationManager.cancel(task.getId());
       }
+
+//      public void onFinished(int id)
+//      {
+//         handler.sendEmptyMessage(id);
+//      }
    }
 }

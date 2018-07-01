@@ -9,27 +9,6 @@
     android:orientation="vertical"
     tools:context=".WordMateX">
 
-    <LinearLayout
-        android:id="@+id/messageView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:visibility="gone">
-        <TextView
-            android:id="@+id/textView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingBottom="10dp"
-            android:text="textView"
-            android:textAppearance="?android:attr/textAppearanceLarge"/>
-
-        <Button
-            android:id="@+id/downloaderButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/downloader"/>
-    </LinearLayout>
-
     <android.support.design.widget.AppBarLayout
         android:id="@+id/app_bar"
         android:layout_width="match_parent"
@@ -40,18 +19,18 @@
             android:id="@+id/tv_title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:background="@android:drawable/title_bar"
             android:ellipsize="end"
             android:maxLines="1"
             android:paddingLeft="16dp"
             android:paddingRight="16dp"
-            android:text="@string/sample_title"
-            android:textStyle="bold"
-            android:background="@android:drawable/title_bar"/>
+            android:text="@string/app_name"
+            android:textStyle="bold"/>
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
+            android:layout_height="?android:attr/actionBarSize"
             android:contentInsetLeft="0dp"
             android:contentInsetStart="0dp"
             app:contentInsetLeft="0dp"
@@ -60,6 +39,32 @@
 
         </android.support.v7.widget.Toolbar>
     </android.support.design.widget.AppBarLayout>
+
+    <LinearLayout
+        android:id="@+id/messageView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical|center_horizontal"
+        android:orientation="vertical"
+        android:visibility="gone">
+
+        <TextView
+            android:id="@+id/textView"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingBottom="10dp"
+            android:text="@string/no_dict"
+            android:textAppearance="?android:attr/textAppearanceLarge"/>
+
+        <Button
+            android:id="@+id/downloaderButton"
+            style="?android:attr/borderlessButtonStyle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/downloader"
+            android:textColor="@color/accent"/>
+    </LinearLayout>
+
 
     <ViewSwitcher
         android:id="@+id/switcher"
@@ -82,20 +87,30 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
+                <!--android:paddingLeft="8dp"-->
+                <!--android:paddingRight="8dp">-->
+
+            <!--android:paddingLeft="?android:attr/listPreferredItemPaddingLeft"-->
+                <!--android:paddingRight="?android:attr/listPreferredItemPaddingRight">-->
+                <!--android:paddingStart="?android:attr/listPreferredItemPaddingStart"-->
+                <!--android:paddingEnd="?android:attr/listPreferredItemPaddingEnd">-->
 
                 <TextView
                     android:id="@+id/wordView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textStyle="bold"/>
+                    android:textStyle="bold"
+                    android:padding="8dp"/>
 
                 <TextView
                     android:id="@+id/definitionView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:typeface="serif"/>
+                    android:typeface="serif"
+                    android:paddingLeft="8dp"
+                    android:paddingRight="8dp"/>
             </LinearLayout>
         </ScrollView>
     </ViewSwitcher>
