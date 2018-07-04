@@ -2,13 +2,10 @@ package org.d1scw0rld.wordmatex;
 
 import android.Manifest;
 import android.content.BroadcastReceiver;
-import android.content.IntentFilter;
-import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AlertDialog;
-import android.app.SearchManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
@@ -16,8 +13,9 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.ActionMenuView;
 import android.support.v7.widget.DefaultItemAnimator;
 import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.LinearLayoutManager;
@@ -29,15 +27,14 @@ import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.ViewSwitcher;
 
-import java.io.IOException;
-
 import org.d1scw0rld.wordmatex.dictionary.Dict;
+
+import java.io.IOException;
 
 public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
 {
@@ -47,9 +44,9 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
    final static String PREF_FILE = "main";
 
    private final static String PREF_DICT = "dictionary",
-         PREF_WORD = "word",
-         PREF_VIEW = "view",
-         PREF_WORD_LIST = "word_list";
+         PREF_WORD                       = "word",
+         PREF_VIEW                       = "view",
+         PREF_WORD_LIST                  = "word_list";
 
    //   private final static String[] PERMISSIONS = {Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
    private static String[] PERMISSIONS;
@@ -67,8 +64,9 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
 
    private boolean enableWordlist;
 
-   private int currentDict,
-         currentWord;
+   private int  currentDict;
+
+   private int currentWord;
 
    private ViewSwitcher switcher;
 
@@ -93,15 +91,13 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
 
    private Button downloaderButton;
 
-   private Toolbar toolbar;
-
    @Override
    protected void onCreate(Bundle savedInstanceState)
    {
       super.onCreate(savedInstanceState);
       setContentView(R.layout.main);
 
-      toolbar = findViewById(R.id.toolbar);
+      Toolbar toolbar = findViewById(R.id.toolbar);
       setSupportActionBar(toolbar);
       assert getSupportActionBar() != null;
       getSupportActionBar().setDisplayShowTitleEnabled(false);
@@ -118,9 +114,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
       textView = findViewById(R.id.textView);
       wordView = findViewById(R.id.wordView);
       scroll = findViewById(R.id.scroll);
-      definitionView = findViewById(R.id.definitionView);
-      tvTitle = findViewById(R.id.tv_title);
-
       /*
        *    Smooth scroll. Too slow.
        */
@@ -131,6 +124,48 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
 //            return LinearSmoothScroller.SNAP_TO_START;
 //         }
 //      };
+      definitionView = findViewById(R.id.definitionView);
+      tvTitle = findViewById(R.id.tv_title);
+      searchView = findViewById(R.id.search);
+      searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener()
+      {
+
+         @Override
+         public boolean onQueryTextSubmit(String arg0)
+         {
+            return false;
+         }
+
+         @Override
+         public boolean onQueryTextChange(String arg0)
+         {
+            if(arg0.isEmpty())
+            {
+               onInput(arg0);
+            }
+            else
+            {
+               if(!isWordlistView())
+               {
+                  displayContent(arg0);
+               }
+               else
+               {
+                  displayWordList(arg0);
+               }
+            }
+            return true;
+         }
+      });
+      searchView.setOnCloseListener(new SearchView.OnCloseListener()
+      {
+         @Override
+         public boolean onClose()
+         {
+            return true;
+         }
+      });
+
 
       downloaderButton = findViewById(R.id.downloaderButton);
       downloaderButton.setOnClickListener(new View.OnClickListener()
@@ -174,11 +209,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
          ActivityCompat.requestPermissions(this, PERMISSIONS, PERMISSION_ALL);
       }
 
-      // In case
-      if(searchView != null)
-      {
-         dictLoader = new DictLoader(this);
-      }
 
       switcher.setInAnimation(null);
       switcher.setOutAnimation(null);
@@ -194,10 +224,9 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
             onInput();
          }
       }
-//      inputField.requestFocus();
-//      inputField.selectAll();
-//      UpdateManager updateManager = new UpdateManager(this);
 
+      searchView.clearFocus();
+      dictLoader = new DictLoader(this);
    }
 
    @Override
@@ -220,7 +249,8 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
    }
 
    @Override
-   public void onResume() {
+   public void onResume()
+   {
       super.onResume();
       // This registers mMessageReceiver to receive messages.
       LocalBroadcastManager.getInstance(this)
@@ -229,9 +259,10 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
    }
 
    @Override
-   protected void onPause() {
+   protected void onPause()
+   {
       // Unregister since the activity is not visible
-      LocalBroadcastManager.getInstance(this) 
+      LocalBroadcastManager.getInstance(this)
                            .unregisterReceiver(mMessageReceiver);
       super.onPause();
    }
@@ -248,148 +279,7 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
       MenuInflater inflater = getMenuInflater();
       inflater.inflate(R.menu.menu_main, menu);
 
-      final MenuItem searchItem = menu.findItem(R.id.action_search);
-      searchView = (SearchView) searchItem.getActionView();
-
-      SearchManager searchManager = (SearchManager) this.getSystemService(Context.SEARCH_SERVICE);
-      assert searchManager != null;
-      searchView.setSearchableInfo(searchManager.getSearchableInfo(this.getComponentName()));
-
-
-      toolbar.getViewTreeObserver()
-             .addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener()
-             {
-                @Override
-                public void onGlobalLayout()
-                {
-                   if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-                   {
-                      toolbar.getViewTreeObserver()
-                             .removeOnGlobalLayoutListener(this);
-                   }
-                   View menuItem = findViewById(R.id.action_dictionary);
-                   if(menuItem != null)
-                   {
-                      int[] location = new int[2];
-                      menuItem.getLocationOnScreen(location);
-                      int x = location[0]; //x coordinate
-
-                      ActionMenuView.LayoutParams params =
-                            new ActionMenuView.LayoutParams(ActionMenuView.LayoutParams.WRAP_CONTENT, ActionMenuView.LayoutParams.MATCH_PARENT);
-                      params.width = x;
-
-                      /*
-                       *    I variant - icon outside the input field
-                       */
-                      searchView.setIconifiedByDefault(false);
-                      searchItem.expandActionView();
-                      searchView.setOnCloseListener(new SearchView.OnCloseListener()
-                      {
-                         @Override
-                         public boolean onClose()
-                         {
-                            return true;
-                         }
-                      });
-                      searchView.setLayoutParams(params);
-
-                      /*
-                       *   II variant - icon in the field as hint
-                       */
-
-//                      searchView.setIconified(false);
-//                      searchView.requestFocus();
-//                      searchView.setOnCloseListener(new SearchView.OnCloseListener()
-//                      {
-//                         @Override
-//                         public boolean onClose()
-//                         {
-//                            return true;
-//                         }
-//                      });
-//
-//                      searchView.setLayoutParams(params);
-//
-//                      AutoCompleteTextView autoComplete = (AutoCompleteTextView) searchView.findViewById(R.id.search_src_text);
-//                      Class<?> clazz = null;
-//                      try
-//                      {
-//                         clazz = SearchView.SearchAutoComplete.class;
-////                         clazz = Class.forName("android.widget.SearchView$SearchAutoComplete");
-//                         SpannableStringBuilder stopHint = new SpannableStringBuilder("  ");
-//                         stopHint.append("Hint");
-//                         // Add the icon as an spannable
-//                         Drawable searchIcon = getResources().getDrawable(R.drawable.ic_search_white_24dp);
-//                         Method textSizeMethod = clazz.getMethod("getTextSize");
-//                         Float rawTextSize = (Float) textSizeMethod.invoke(autoComplete);
-//                         int textSize = (int) (rawTextSize * 1.25);
-//                         searchIcon.setBounds(0, 0, textSize, textSize);
-//                         stopHint.setSpan(new ImageSpan(searchIcon), 1, 2, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-//                         // Set the new hint text
-//                         Method setHintMethod = clazz.getMethod("setHint", CharSequence.class);
-//                         setHintMethod.invoke(autoComplete, stopHint);
-//                      }
-//                      catch(Exception e)
-//                      {
-//                         // Set default hint
-//                         searchView.setQueryHint("Search");
-//                         e.printStackTrace();
-//                      }
-                   }
-                }
-             });
-
-      searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener()
-      {
-
-         @Override
-         public boolean onQueryTextSubmit(String arg0)
-         {
-            return false;
-         }
-
-         @Override
-         public boolean onQueryTextChange(String arg0)
-         {
-
-            if(arg0.isEmpty())
-            {
-               onInput(arg0);
-            }
-            else
-            {
-//            onInput(arg0);
-               if(!isWordlistView())
-//            if(!enableWordlist)
-               {
-                  displayContent(arg0);
-               }
-               else
-               {
-                  displayWordList(arg0);
-               }
-            }
-            return true;
-         }
-      });
-// Todo check it. Shall search disappear?
-//      if(enableWordlist)
-//      {
-////         goButton.setVisibility(View.VISIBLE);
-////         searchView.setVisibility(View.VISIBLE);
-//      }
-
-      dictLoader = new DictLoader(this);
-//      if(!enableWordlist)
-//      {
-//         switcher.setDisplayedChild(1);
-//         if(dicts.length > 0)
-//         {
-//            onInput();
-//         }
-//      }
       return super.onCreateOptionsMenu(menu);
-//      return true;
    }
 
    @Override
@@ -399,9 +289,7 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
       {
          menu.setGroupVisible(R.id.group_info, false);
          menu.setGroupVisible(R.id.group_words, false);
-//         menu.setGroupVisible(R.id.group_dict, false);
-         menu.findItem(R.id.action_search)
-             .setVisible(false);
+         searchView.setVisibility(View.GONE);
          menu.findItem(R.id.action_dictionary)
              .setVisible(false);
 
@@ -409,12 +297,7 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
       else
       {
          menu.setGroupVisible(R.id.group_info, true);
-//         menu.findItem(R.id.action_search).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-//         menu.findItem(R.id.action_dictionary).setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
-
-//         menu.setGroupVisible(R.id.group_dict, true);
-         menu.findItem(R.id.action_search)
-             .setVisible(true);
+         searchView.setVisibility(View.VISIBLE);
          menu.findItem(R.id.action_dictionary)
              .setVisible(true);
 
@@ -425,26 +308,26 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
          else
          {
             menu.setGroupVisible(R.id.group_words, true);
-            if(hasPrevious())
-            {
-               menu.findItem(R.id.action_prev_word)
-                   .setEnabled(true);
-            }
-            else
-            {
-               menu.findItem(R.id.action_prev_word)
-                   .setEnabled(false);
-            }
-            if(hasNext())
-            {
-               menu.findItem(R.id.action_next_word)
-                   .setEnabled(true);
-            }
-            else
-            {
-               menu.findItem(R.id.action_next_word)
-                   .setEnabled(false);
-            }
+//            if(hasPrevious())
+//            {
+//               menu.findItem(R.id.action_prev_word)
+//                   .setEnabled(true);
+//            }
+//            else
+//            {
+//               menu.findItem(R.id.action_prev_word)
+//                   .setEnabled(false);
+//            }
+//            if(hasNext())
+//            {
+//               menu.findItem(R.id.action_next_word)
+//                   .setEnabled(true);
+//            }
+//            else
+//            {
+//               menu.findItem(R.id.action_next_word)
+//                   .setEnabled(false);
+//            }
          }
       }
       return super.onPrepareOptionsMenu(menu);
@@ -468,7 +351,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
             break;
 
          case R.id.action_dict_downloader:
-//            startActivity(new Intent(this, Downloader.class));
             startActivity(new Intent(this, Downloader.class));
             break;
 
@@ -496,22 +378,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
       return true;
    }
 
-//   @Override
-//   public boolean onKeyDown(int keyCode, KeyEvent event)
-//   {
-//
-//      if(dicts.length == 0)
-//      {
-//         return super.onKeyDown(keyCode, event);
-//      }
-//      if(keyCode != KeyEvent.KEYCODE_BACK || !isContentView() || !enableWordlist)
-//      {
-//         return super.onKeyDown(keyCode, event);
-//      }
-//      displayWordList();
-//      return true;
-//   }
-
    @Override
    public void onBackPressed()
    {
@@ -537,7 +403,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
       showDialog(android.R.drawable.ic_dialog_alert, title, error_format);
    }
 
-   //   {
    @Override
    public void showError(String message)
    {
@@ -595,7 +460,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
       }
    }
 
-   //      mMenuView.setAccessible(true);
    void init()
    {
       String[] titles = new String[dicts.length];
@@ -696,7 +560,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
          word = "";
       }
       searchView.setQuery(word, false);
-//      searchView.requestFocus();
       searchView.clearFocus();
    }
 
@@ -727,8 +590,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
    void displayContent(int index)
    {
       showContentView();
-//      invalidateOptionsMenu();
-//      onPrepareOptionsMenu(m);
 
       if(currentWord != index)
       {
@@ -736,7 +597,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
          rvWordList.scrollTo(0, 0);
          try
          {
-//            setInput(dicts[currentDict].getWord(index));?
             wordView.setText(dicts[currentDict].getWord(index));
             definitionView.setText(Html.fromHtml(dicts[currentDict].getDefinition(index)));
             scroll.scrollTo(0, 0);
@@ -781,7 +641,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
    void displayWordList(int index)
    {
       showWordlistView();
-//      invalidateOptionsMenu();
       ((LinearLayoutManager) rvWordList.getLayoutManager()).scrollToPositionWithOffset(index, 0);
 
       /*
@@ -845,7 +704,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
    {
       if(hasPrevious())
       {
-//         displayContent(currentWord - 1);
          try
          {
             setInput(dicts[currentDict].getWord(currentWord - 1));
@@ -861,7 +719,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
    {
       if(hasNext())
       {
-//         displayContent(currentWord + 1);
          try
          {
             setInput(dicts[currentDict].getWord(currentWord + 1));

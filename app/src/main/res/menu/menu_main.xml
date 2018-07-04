@@ -3,23 +3,11 @@
       xmlns:tools="http://schemas.android.com/tools"
       tools:context=".WordMateX">
 
-    <!--<group-->
-    <!--android:id="@+id/group_dict">-->
-
-    <item
-        android:id="@+id/action_search"
-        android:icon="@drawable/ic_search_white_24dp"
-        android:title="@android:string/search_go"
-        app:actionViewClass="android.support.v7.widget.SearchView"
-        app:showAsAction="always"
-        />
-
     <item
         android:id="@+id/action_dictionary"
         android:icon="@drawable/ic_book_white_24dp"
-        android:title="@string/action_sort"
+        android:title="@string/action_dict"
         app:showAsAction="always"/>
-    <!--</group>-->
 
     <item
         android:id="@+id/action_about"
@@ -65,6 +53,3 @@
             app:showAsAction="never|always"/>
     </group>
 </menu>
-
-    <!--android:icon="@android:drawable/ic_media_previous"-->
-    <!--android:icon="@android:drawable/ic_media_next"-->

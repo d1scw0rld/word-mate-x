@@ -31,35 +31,6 @@ class DictLoader
    private ProgressDialog        dialog;
    private TreeMap<String, Dict> dicts;
    private ArrayList<File>       files;
-//   private Handler handler = new Handler()
-//   {
-//      public void handleMessage(Message msg)
-//      {
-//         if(dialog != null)
-//         {
-//            dialog.dismiss();
-//            dialog = null;
-//         }
-//         DictLoader dictLoader = DictLoader.this;
-//         dictLoader.currentFile += msg.what;
-//         if(DictLoader.this.currentFile < files.size())
-//         {
-//            File file = (File) files.get(currentFile);
-//            if(file.getName()
-//                   .endsWith(".dwm"))
-//            {
-//               loadWMDict(file);
-//               return;
-//            }
-//            else
-//            {
-//               loadStarDict(file);
-//               return;
-//            }
-//         }
-//         done();
-//      }
-//   };
 
    static class LoaderHandler extends Handler
    {
@@ -107,39 +78,6 @@ class DictLoader
    private boolean stop;
 
    private IWordMate wm;
-
-//   class C00001 extends Handler
-//   {
-//      C00001()
-//      {}
-//
-//      public void handleMessage(Message msg)
-//      {
-//         if(DictLoader.this.dialog != null)
-//         {
-//            DictLoader.this.dialog.dismiss();
-//            DictLoader.this.dialog = null;
-//         }
-//         DictLoader dictLoader = DictLoader.this;
-//         dictLoader.currentFile += msg.what;
-//         if(DictLoader.this.currentFile < DictLoader.this.files.size())
-//         {
-//            File file =
-//                      (File) DictLoader.this.files.get(DictLoader.this.currentFile);
-//            if(file.getName().endsWith(".dwm"))
-//            {
-//               DictLoader.this.loadWMDict(file);
-//               return;
-//            }
-//            else
-//            {
-//               DictLoader.this.loadStarDict(file);
-//               return;
-//            }
-//         }
-//         DictLoader.this.done();
-//      }
-//   }
 
    class StarDictIndexGenerator extends Thread
    {
@@ -200,7 +138,7 @@ class DictLoader
             out.close();
             if(!tmpFile.renameTo(indexFile))
             {
-               throw new IOException("The temporary file can't be reaname");
+               throw new IOException("The temporary file can't be rename");
             }
             handler.sendEmptyMessage(0);
          }

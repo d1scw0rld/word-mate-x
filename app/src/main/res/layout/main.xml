@@ -36,7 +36,16 @@
             app:contentInsetLeft="0dp"
             app:contentInsetStart="0dp"
             app:popupTheme="@style/AppTheme.PopupOverlay">
-
+            <!--<android.support.v7.widget.SearchView-->
+            <!--android:id="@+id/search"-->
+            <!--android:layout_width="match_parent"-->
+            <!--android:layout_height="wrap_content"/>-->
+            <android.support.v7.widget.SearchView
+                android:id="@+id/search"
+                style="@style/Widget.AppCompat.SearchView.ActionBar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:iconifiedByDefault="false"/>
         </android.support.v7.widget.Toolbar>
     </android.support.design.widget.AppBarLayout>
 
@@ -90,7 +99,7 @@
                 <!--android:paddingLeft="8dp"-->
                 <!--android:paddingRight="8dp">-->
 
-            <!--android:paddingLeft="?android:attr/listPreferredItemPaddingLeft"-->
+                <!--android:paddingLeft="?android:attr/listPreferredItemPaddingLeft"-->
                 <!--android:paddingRight="?android:attr/listPreferredItemPaddingRight">-->
                 <!--android:paddingStart="?android:attr/listPreferredItemPaddingStart"-->
                 <!--android:paddingEnd="?android:attr/listPreferredItemPaddingEnd">-->
@@ -99,18 +108,18 @@
                     android:id="@+id/wordView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:padding="8dp"
                     android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:textStyle="bold"
-                    android:padding="8dp"/>
+                    android:textStyle="bold"/>
 
                 <TextView
                     android:id="@+id/definitionView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?android:attr/textAppearanceMedium"
-                    android:typeface="serif"
                     android:paddingLeft="8dp"
-                    android:paddingRight="8dp"/>
+                    android:paddingRight="8dp"
+                    android:textAppearance="?android:attr/textAppearanceMedium"
+                    android:typeface="serif"/>
             </LinearLayout>
         </ScrollView>
     </ViewSwitcher>

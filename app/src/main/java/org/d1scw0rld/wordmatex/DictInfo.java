@@ -8,7 +8,6 @@ import org.json.JSONObject;
 
 class DictInfo implements Parcelable
 {
-   //      private long id;
    private long words;
 
    private long size;
@@ -81,7 +80,7 @@ class DictInfo implements Parcelable
       return url;
    }
 
-   public DictInfo(Parcel in)
+   private DictInfo(Parcel in)
    {
       name = in.readString();
       info = in.readString();
