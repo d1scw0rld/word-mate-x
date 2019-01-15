@@ -64,9 +64,10 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
 
    private boolean enableWordlist;
 
-   private int  currentDict;
+   private int currentDict,
+         currentWord;
 
-   private int currentWord;
+   private String sharedText = null;
 
    private ViewSwitcher switcher;
 
@@ -131,27 +132,27 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
       {
 
          @Override
-         public boolean onQueryTextSubmit(String arg0)
+         public boolean onQueryTextSubmit(String query)
          {
             return false;
          }
 
          @Override
-         public boolean onQueryTextChange(String arg0)
+         public boolean onQueryTextChange(String newText)
          {
-            if(arg0.isEmpty())
+            if(newText.isEmpty())
             {
-               onInput(arg0);
+               onInput(newText);
             }
             else
             {
                if(!isWordlistView())
                {
-                  displayContent(arg0);
+                  displayContent(newText);
                }
                else
                {
-                  displayWordList(arg0);
+                  displayWordList(newText);
                }
             }
             return true;
@@ -179,24 +180,21 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
 
       dicts = new Dict[0];
       currentWord = -1;
-   }
 
-   @Override
-   public void onRequestPermissionsResult(final int requestCode, @NonNull final String[] permissions, @NonNull final int[] grantResults)
-   {
-      super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-      if(requestCode == PERMISSION_ALL)
+
+      Intent intent = getIntent();
+      String action = intent.getAction();
+      String type = intent.getType();
+
+      if(Intent.ACTION_SEND.equals(action) && type != null)
       {
-         if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+         if("text/plain".equals(type))
          {
-            dictLoader = new DictLoader(this);
-         }
-         else
-         {
-            finish();
+            sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
          }
       }
    }
+
 
    @Override
    protected void onStart()
@@ -230,6 +228,61 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
    }
 
    @Override
+   public void onResume()
+   {
+      super.onResume();
+      // This registers mMessageReceiver to receive messages.
+      LocalBroadcastManager.getInstance(this)
+                           .registerReceiver(mMessageReceiver,
+                                             new IntentFilter("dict-added"));
+   }
+
+   @Override
+   protected void onNewIntent(Intent intent)
+   {
+      super.onNewIntent(intent);
+      String type = intent.getType();
+
+      if(Intent.ACTION_SEND.equals(intent.getAction()) && type != null)
+      {
+         if("text/plain".equals(type))
+         {
+            String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
+            if(sharedText != null)
+            {
+               setInput(sharedText);
+            }
+         }
+      }
+   }
+
+   @Override
+   public void onRequestPermissionsResult(final int requestCode, @NonNull final String[] permissions, @NonNull final int[] grantResults)
+   {
+      super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+      if(requestCode == PERMISSION_ALL)
+      {
+         if(grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED)
+         {
+            dictLoader = new DictLoader(this);
+         }
+         else
+         {
+            finish();
+         }
+      }
+   }
+
+   @Override
+   protected void onPause()
+   {
+      // Unregister since the activity is not visible
+      LocalBroadcastManager.getInstance(this)
+                           .unregisterReceiver(mMessageReceiver);
+      super.onPause();
+   }
+
+   @Override
    protected void onStop()
    {
       super.onStop();
@@ -246,25 +299,6 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
                            .toString());
          putPref(PREF_VIEW, switcher.getDisplayedChild());
       }
-   }
-
-   @Override
-   public void onResume()
-   {
-      super.onResume();
-      // This registers mMessageReceiver to receive messages.
-      LocalBroadcastManager.getInstance(this)
-                           .registerReceiver(mMessageReceiver,
-                                             new IntentFilter("dict-added"));
-   }
-
-   @Override
-   protected void onPause()
-   {
-      // Unregister since the activity is not visible
-      LocalBroadcastManager.getInstance(this)
-                           .unregisterReceiver(mMessageReceiver);
-      super.onPause();
    }
 
    @Override
@@ -435,6 +469,11 @@ public class WordMateX extends AppCompatActivity implements DictLoader.IWordMate
             messageView.setVisibility(View.GONE);
             dicts = newDicts;
             init();
+            if(sharedText != null)
+            {
+               setInput(sharedText);
+               sharedText = null;
+            }
             invalidateOptionsMenu();
          }
       }
