@@ -44,7 +44,7 @@ public class Downloader extends AppCompatActivity
 
    private DictsInfoAdapter adDictsInfo;
 
-   private CoordinatorLayout oCoordinatorLayout;
+   private CoordinatorLayout coordinatorLayout;
 
    private GetDictsInfoTask.Callback getDictsInfoCallback;
 
@@ -56,7 +56,7 @@ public class Downloader extends AppCompatActivity
       super.onCreate(savedInstanceState);
       setContentView(R.layout.downloader);
 
-      oCoordinatorLayout = findViewById(R.id.coordinator_layout);
+      coordinatorLayout = findViewById(R.id.coordinator_layout);
 
       Toolbar toolbar = findViewById(R.id.toolbar);
       setSupportActionBar(toolbar);
@@ -80,6 +80,7 @@ public class Downloader extends AppCompatActivity
          }
       });
       searchView.clearFocus();
+      coordinatorLayout.requestFocus();
 
       swipeContainer = findViewById(R.id.swipe_container);
       // Setup refresh listener which triggers new data loading
@@ -91,7 +92,6 @@ public class Downloader extends AppCompatActivity
             // Your code to refresh the list here.
             // Make sure you call swipeContainer.setRefreshing(false)
             // once the network request has completed successfully.
-//            new DropBoxTask(callback).execute();
             new GetDictsInfoTask(getDictsInfoCallback).execute();
          }
       });
@@ -120,7 +120,7 @@ public class Downloader extends AppCompatActivity
          {
             e.printStackTrace();
             Snackbar snackbar = Snackbar
-                  .make(oCoordinatorLayout, R.string.connection_error, Snackbar.LENGTH_LONG)
+                  .make(coordinatorLayout, R.string.connection_error, Snackbar.LENGTH_LONG)
                   .setAction(R.string.retry, new View.OnClickListener()
                   {
                      @Override
@@ -294,7 +294,7 @@ public class Downloader extends AppCompatActivity
          return visibleItems.size();
       }
 
-      public void notifyAdapterDataSetChanged()
+      void notifyAdapterDataSetChanged()
       {
          visibleItems.clear();
          visibleItems.addAll(alDictsInfo);
@@ -329,7 +329,7 @@ public class Downloader extends AppCompatActivity
          }
       }
 
-      public void filter(String charText)
+      void filter(String charText)
       {
          sFilter = charText.toLowerCase(Locale.getDefault());
          visibleItems.clear();

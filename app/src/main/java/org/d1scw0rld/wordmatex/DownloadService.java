@@ -1,18 +1,22 @@
 package org.d1scw0rld.wordmatex;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
+//import android.util.Log;
 import android.widget.Toast;
 
 import java.io.BufferedInputStream;
@@ -68,7 +72,7 @@ public class DownloadService extends Service
          DownloadService service = mService.get();
          if(service != null)
          {
-            Log.i(TAG, "msg " + msg.what);
+            Log("msg " + msg.what);
             service.done(msg.what);
          }
       }
@@ -78,7 +82,7 @@ public class DownloadService extends Service
 
    public void onCreate()
    {
-      Log.i(TAG, "Service created");
+      Log("Service created");
       tasks = new TreeMap<>();
       handler = new IncomingHandler(this);
    }
@@ -90,9 +94,10 @@ public class DownloadService extends Service
 
    public void onStart(Intent intent, int startId)
    {
-      Log.i(TAG, "Service start");
+      Log("Service start");
+      Log("Action: " + intent.getIntExtra(XTR_ACTION, 0));
 
-      Task t;
+      Task task;
       DictInfo dictInfo;
       int id = 0;
 
@@ -103,27 +108,27 @@ public class DownloadService extends Service
             id = dictInfo.getId();
             if(tasks.get(valueOf(dictInfo.getId())) == null)
             {
-               t = new Task(dictInfo);
-               tasks.put(t.getId(), t);
-               Log.i(TAG, "Task add " + t.getName());
-               showToast(getString(R.string.download) + ": " + t.getName());
+               task = new Task(dictInfo);
+               tasks.put(task.getId(), task);
+               Log("Task add " + task.getName());
+               showToast(getString(R.string.download) + ": " + task.getName());
 
-               new RunnerThread(t).start();
+               new DownloadThread(task).start();
             }
             break;
 
          case ACT_CANCEL /* 2 */:
             id = intent.getIntExtra(XTR_ID, 0);
-            t = tasks.get(valueOf(id));
-            if(t != null)
+            task = tasks.get(valueOf(id));
+            if(task != null)
             {
-               t.stop = true;
+               task.stop = true;
                tasks.remove(valueOf(id));
-               Log.i(TAG, "Task cancel " + t.getName());
-               Log.i(TAG, "Tasks " + tasks.size());
+               Log("Task cancel " + task.getName());
+               Log("Tasks " + tasks.size());
                showToast(getString(R.string.cancel_download)
                                + ": "
-                               + t.getName());
+                               + task.getName());
             }
             break;
 
@@ -145,10 +150,15 @@ public class DownloadService extends Service
 
       if(tasks.size() > 0)
       {
-         NotificationCompat.Builder oNotificationBuilder = new NotificationCompat.Builder(DownloadService.this, NTF_CHN);
-         oNotificationBuilder.setContentTitle(getString(R.string.app_name));
-         oNotificationBuilder.setSmallIcon(R.drawable.icon);
-         Notification notification = oNotificationBuilder.build();
+         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+            createNotificationChannel();
+
+         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(DownloadService.this, NTF_CHN);
+         notificationBuilder.setContentTitle(getString(R.string.app_name));
+         notificationBuilder.setSmallIcon(R.drawable.icon);
+         Notification notification = notificationBuilder.build();
+
+         Log("startForeground");
 
          startForeground(id, notification);
       }
@@ -158,20 +168,50 @@ public class DownloadService extends Service
       }
    }
 
+//   @RequiresApi(api = Build.VERSION_CODES.O)
+//   private void startMyOwnForeground(int id){
+//      createNotificationChannel();
+//
+//      NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(DownloadService.this, NTF_CHN);
+//      Notification notification = notificationBuilder.setOngoing(true)
+//                                                     .setSmallIcon(R.drawable.icon)
+//                                                     .setContentTitle(getString(R.string.app_name))
+//                                                     .setPriority(NotificationManager.IMPORTANCE_MIN)
+//                                                     .setCategory(Notification.CATEGORY_SERVICE)
+//                                                     .build();
+//      startForeground(id, notification);
+//   }
+
+   @RequiresApi(api = Build.VERSION_CODES.O)
+   private void createNotificationChannel()
+   {
+      String NOTIFICATION_CHANNEL_NAME = "WordMateX download service";
+      NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+      assert notificationManager != null;
+      if(notificationManager.getNotificationChannel(NTF_CHN) != null)
+         return;
+      NotificationChannel notificationChannel = new NotificationChannel(NTF_CHN, NOTIFICATION_CHANNEL_NAME, NotificationManager.IMPORTANCE_NONE);
+      notificationChannel.setLightColor(Color.BLUE);
+      notificationChannel.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+
+      notificationManager.createNotificationChannel(notificationChannel);
+   }
+
    void done(int id)
    {
       if(tasks.size() > 0)
       {
-         Log.i(TAG,
-               "Remove " + id + " " + tasks.get(id)
+         Log("Remove " + id + " " + tasks.get(id)
                                            .getName());
       }
 
       tasks.remove(id);
-      Log.i(TAG, "Tasks " + tasks.size());
+      Log("Tasks " + tasks.size());
       if(tasks.size() == 0)
       {
-         Log.i(TAG, "Service stop");
+         Log("Service stop");
+//         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
+//            ((NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE)).deleteNotificationChannel(NTF_CHN);
          stopSelf();
       }
    }
@@ -192,7 +232,7 @@ public class DownloadService extends Service
            .show();
    }
 
-   class RunnerThread extends Thread
+   class DownloadThread extends Thread
    {
       class TaskCanceledException extends Exception
       {}
@@ -203,7 +243,7 @@ public class DownloadService extends Service
 
       File file;
 
-      RunnerThread(Task t)
+      DownloadThread(Task t)
       {
          task = t;
 
@@ -239,7 +279,7 @@ public class DownloadService extends Service
             intent.setData(Uri.fromFile(file));
             sendBroadcast(intent);
 
-            Log.e(TAG, "Task id: " + task.getId());
+            Log("Task id: " + task.getId());
 
 
             if(file.getName()
@@ -275,7 +315,7 @@ public class DownloadService extends Service
                }
             }
 
-            Log.i(TAG, "onFinished task id: " + task.getId());
+            Log("onFinished task id: " + task.getId());
             notificationHelper.onDone();
 
             intent = new Intent("dict-added");
@@ -298,7 +338,6 @@ public class DownloadService extends Service
 
       private void download(File file) throws IOException, TaskCanceledException
       {
-
          OutputStream outputStream = null;
          InputStream inputStream = null;
          File tmpFile = null;
@@ -315,10 +354,10 @@ public class DownloadService extends Service
             tmpFile = File.createTempFile(file.getName(), null, file.getParentFile());
             outputStream = new BufferedOutputStream(new FileOutputStream(tmpFile), BUFFER_SIZE);
 
-            int lengthOfFile = connection.getContentLength();
+            long lengthOfFile = connection.getContentLength();
 
 
-            byte data[] = new byte[1024];
+            byte[] data = new byte[1024];
 
             long total = 0;
 
@@ -344,7 +383,7 @@ public class DownloadService extends Service
 
                // publishing the progress....
                // After this onProgressUpdate will be called
-               progressNew = (int) (total * 100) / lengthOfFile;
+               progressNew = (int) (total * 100 / lengthOfFile);
                if(progress != progressNew)
                {
                   progress = progressNew;
@@ -477,7 +516,7 @@ public class DownloadService extends Service
             createDir(outputFile.getParentFile());
          }
 
-         Log.v(TAG, "Extracting: " + zipEntry);
+         Log("Extracting: " + zipEntry);
 
          InputStream inputStream = new BufferedInputStream(zipFile.getInputStream(zipEntry), BUFFER_SIZE);
          try
@@ -546,7 +585,7 @@ public class DownloadService extends Service
             return;
          }
 
-         Log.v(TAG, "Creating dir " + dir.getName());
+         Log("Creating dir " + dir.getName());
 
          if(!dir.mkdirs())
          {
@@ -564,11 +603,11 @@ public class DownloadService extends Service
 
       private Intent intent;
 
-      private PendingIntent pi;
+      private PendingIntent pendingIntent;
 
       private NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
-      private NotificationCompat.Builder oNotificationBuilder;
+      private NotificationCompat.Builder notificationBuilder;
 
       NotificationHelper(Task task)
       {
@@ -579,130 +618,138 @@ public class DownloadService extends Service
       {
          this.context = context;
          this.task = task;
-         oNotificationBuilder = new NotificationCompat.Builder(context, NTF_CHN);
+         notificationBuilder = new NotificationCompat.Builder(context, NTF_CHN);
       }
 
-      public void onDownloadStart()
+      void onDownloadStart()
       {
          intent = new Intent(context, DownloadService.class);
          intent.putExtra(XTR_ACTION, DownloadService.ACT_VIEW);
          intent.putExtra(XTR_DICT_INFO, task);
          intent.setAction(Long.toString(System.currentTimeMillis()));
-         pi = PendingIntent.getService(context,
-                                       0,
-                                       intent,
-                                       0);
+         pendingIntent = PendingIntent.getService(context,
+                                                  0,
+                                                  intent,
+                                                  0);
 
 
          String title = getString(R.string.download) + ": " + task.getName();
 
-         oNotificationBuilder.setContentTitle(title)
-                             .setContentIntent(pi)
-                             .setSmallIcon(android.R.drawable.stat_sys_download)
-                             .setWhen(System.currentTimeMillis())
-                             .setOngoing(true);
+         notificationBuilder.setContentTitle(title)
+                            .setContentIntent(pendingIntent)
+                            .setSmallIcon(android.R.drawable.stat_sys_download)
+                            .setWhen(System.currentTimeMillis())
+                            .setOngoing(true);
 
-         notificationManager.notify(task.getId(), oNotificationBuilder.build());
+         notificationManager.notify(task.getId(), notificationBuilder.build());
 
-         Log.i(TAG, "onDownloadStart Task:" + task.getName());
+         Log("onDownloadStart Task:" + task.getName());
       }
 
-      public void onProgress(int progress)
+      void onProgress(int progress)
       {
+         notificationBuilder.setProgress(100, progress, false);
 
-         oNotificationBuilder.setProgress(100, progress, false);
-
-         notificationManager.notify(task.getId(), oNotificationBuilder.build());
-         Log.i(TAG, "onProgress Task:" + task.getName() + " percent:" + progress);
+         notificationManager.notify(task.getId(), notificationBuilder.build());
+         Log("onProgress Task:" + task.getName() + " percent:" + progress);
       }
 
-      public void onDone()
+      void onDone()
       {
          intent = new Intent(context, WordMateX.class);
          intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-         intent.setAction(Long.toString(System.currentTimeMillis()));
+//         intent.setAction(Long.toString(System.currentTimeMillis()));
 
-         pi = PendingIntent.getActivity(context,
-                                        0,
-                                        intent,
-                                        0);
+         pendingIntent = PendingIntent.getActivity(context,
+                                                   0,
+                                                   intent,
+                                                   0);
 
-         oNotificationBuilder.setContentTitle(task.getName())
-                             .setContentText(getString(android.R.string.ok))
-                             .setContentIntent(pi) // TODO ???
-                             .setProgress(0, 0, false)
-                             .setSmallIcon(android.R.drawable.stat_sys_download_done)
-                             .setOngoing(false)
-                             .setAutoCancel(true);
+         notificationBuilder.setContentTitle(task.getName())
+                            .setContentText(getString(android.R.string.ok))
+                            .setContentIntent(pendingIntent) // Call WordMatex main activity
+                            .setProgress(0, 0, false)
+                            .setSmallIcon(android.R.drawable.stat_sys_download_done)
+//                            .setWhen(System.currentTimeMillis()) // new
+                            .setOngoing(false)
+                            .setAutoCancel(true);
 
-         notificationManager.notify(task.getId(), oNotificationBuilder.build());
-         Log.i(TAG, "Done Task:" + task.getName());
+         notificationManager.cancel(task.getId());
+         notificationManager.notify(task.getId(), notificationBuilder.build());
+         Log("Done Task: " + task.getName());
       }
 
-      public void onFail(String sError)
+      void onFail(String sError)
       {
          intent = new Intent(context, WordMateX.class);
+//         intent = new Intent(context, DownloadService.class);
          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
          intent.setAction(Long.toString(System.currentTimeMillis()));
 
-         pi = PendingIntent.getActivity(context,
-                                        0,
-                                        intent,
-                                        0);
+         pendingIntent = PendingIntent.getActivity(context,
+                                                   0,
+                                                   intent,
+                                                   0);
 
-         oNotificationBuilder.setContentTitle(task.getName())
-                             .setContentText(sError)
-                             .setContentIntent(pi)
-                             .setSmallIcon(android.R.drawable.stat_notify_error)
-                             .setWhen(System.currentTimeMillis())
-                             .setAutoCancel(true);
+         notificationBuilder.setContentTitle(task.getName())
+                            .setContentText(sError)
+                            .setContentIntent(pendingIntent)
+                            .setSmallIcon(android.R.drawable.stat_notify_error)
+                            .setWhen(System.currentTimeMillis())
+                            .setAutoCancel(true);
 
-         notificationManager.notify(task.getId(), oNotificationBuilder.build());
+         notificationManager.notify(task.getId(), notificationBuilder.build());
       }
 
-      public void onUnzipStart()
+      void onUnzipStart()
       {
          intent = new Intent(context, DownloadService.class);
          intent.putExtra(XTR_ACTION, DownloadService.ACT_VIEW);
          intent.putExtra(XTR_DICT_INFO, task);
          intent.setAction(Long.toString(System.currentTimeMillis()));
-         pi = PendingIntent.getService(context,
-                                       0,
-                                       intent,
-                                       0);
+         pendingIntent = PendingIntent.getService(context,
+                                                  0,
+                                                  intent,
+                                                  0);
 
-         oNotificationBuilder.setTicker(task.getName())
-                             .setContentTitle(getString(R.string.extract) + ": " + task.getName())
-                             .setContentText(null)
-                             .setSmallIcon(android.R.drawable.stat_sys_download)
-                             .setContentIntent(pi);
+         notificationBuilder.setTicker(task.getName())
+                            .setContentTitle(getString(R.string.extract) + ": " + task.getName())
+                            .setContentText(null)
+                            .setSmallIcon(android.R.drawable.stat_sys_download)
+                            .setContentIntent(pendingIntent);
 
-         notificationManager.notify(task.getId(), oNotificationBuilder.build());
+         notificationManager.notify(task.getId(), notificationBuilder.build());
       }
 
-      public void onUnzipEntryStart(String sEntry)
+      void onUnzipEntryStart(String sEntry)
       {
          intent = new Intent(context, DownloadService.class);
          intent.putExtra(XTR_ACTION, DownloadService.ACT_VIEW);
          intent.putExtra(XTR_DICT_INFO, task);
          intent.setAction(Long.toString(System.currentTimeMillis()));
-         pi = PendingIntent.getService(context,
-                                       0,
-                                       intent,
-                                       0);
+         pendingIntent = PendingIntent.getService(context,
+                                                  0,
+                                                  intent,
+                                                  0);
 
-         oNotificationBuilder.setTicker(task.getName())
-                             .setContentTitle(getString(R.string.extract) + ": " + task.getName())
-                             .setContentText(sEntry)
-                             .setSmallIcon(android.R.drawable.stat_sys_download)
-                             .setContentIntent(pi);
+         notificationBuilder.setTicker(task.getName())
+                            .setContentTitle(getString(R.string.extract) + ": " + task.getName())
+                            .setContentText(sEntry)
+                            .setSmallIcon(android.R.drawable.stat_sys_download)
+                            .setContentIntent(pendingIntent);
 
-         notificationManager.notify(task.getId(), oNotificationBuilder.build());
+         notificationManager.notify(task.getId(), notificationBuilder.build());
       }
 
-      public void onCancel()
+      void onCancel()
       {
          notificationManager.cancel(task.getId());
       }
+   }
+
+   private static void Log(String msg)
+   {
+      if(BuildConfig.BUILD_TYPE.equals("debug"))
+         android.util.Log.i(TAG, msg);
    }
 }

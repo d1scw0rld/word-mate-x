@@ -14,11 +14,11 @@ public class Settings extends AppCompatActivity
    {
       super.onCreate(savedInstanceState);
       getSupportFragmentManager().beginTransaction()
-                                 .replace(android.R.id.content, new MyPreferenceFragment())
+                                 .replace(android.R.id.content, new WordMatePreferenceFragment())
                                  .commit();
    }
 
-   public static class MyPreferenceFragment extends PreferenceFragmentCompat
+   public static class WordMatePreferenceFragment extends PreferenceFragmentCompat
    {
 
 
