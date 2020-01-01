@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="org.d1scw0rld.wordmatex"
-          android:versionCode="1400201000"
-          android:versionName="2.1.0">
+          android:versionCode="140020101"
+          android:versionName="2.1.1">
 
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
     <application
         android:icon="@drawable/icon"
@@ -21,7 +22,8 @@
             android:name=".WordMateX"
             android:label="@string/app_name"
             android:theme="@style/AppTheme"
-            android:launchMode="singleTask">
+            android:launchMode="singleTask"
+            android:configChanges="orientation">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
 
@@ -44,7 +46,8 @@
         <service android:name=".DownloadService"/>
 
         <activity
-            android:name=".Downloader">
+            android:name=".Downloader"
+            android:configChanges="orientation">
         </activity>
     </application>
 
